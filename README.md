@@ -1,18 +1,43 @@
 # Aadhaar Portal
 
-Aadhaar Portal is a Python-based analytics and monitoring workspace for Aadhaar enrollment data.
-This repository currently contains operational helper scripts focused on:
+Python utilities for validating Aadhaar analytics data flows across API, frontend, and SQLite/SQLAlchemy layers.
 
-- API smoke checks
-- Frontend reachability checks
-- SQLite data inspection
-- SQLAlchemy-based DB verification and test inserts
+## At a Glance
 
-## Current Repository Layout
+- Focus: health checks, data sanity checks, and quick DB diagnostics
+- Language: Python
+- Database: SQLite (`aadhaar_analytics.db`)
+- Typical local services:
+  - Backend API: `http://127.0.0.1:8000`
+  - Frontend: `http://127.0.0.1:3000`
+
+## Table of Contents
+
+- [What This Repository Contains](#what-this-repository-contains)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Runbook](#runbook)
+- [Script Catalog](#script-catalog)
+- [Configuration Notes](#configuration-notes)
+- [Troubleshooting](#troubleshooting)
+- [Roadmap Improvements](#roadmap-improvements)
+- [License](#license)
+
+## What This Repository Contains
+
+This repository currently behaves as an operations/testing workspace around an Aadhaar portal stack. The tracked scripts help you:
+
+- Verify backend routes and auth endpoints
+- Validate frontend reachability
+- Inspect and compare SQLite datasets
+- Run quick SQLAlchemy-level checks against backend models
+
+## Project Structure
 
 ```text
 Aadhaar-portal/
-├── aadhaar-portal/                # Application folder (backend/frontend code expected here)
+├── aadhaar-portal/                # App folder (backend/frontend code expected here)
 ├── scripts/
 │   ├── check_api_data.py
 │   ├── check_both_dbs.py
@@ -26,24 +51,24 @@ Aadhaar-portal/
 │   ├── query_with_sqlalchemy.py
 │   ├── smoke_test.py
 │   └── test_insert_enrollment.py
-└── aadhaar_analytics.db           # SQLite database (generated/used at runtime)
+└── aadhaar_analytics.db           # Runtime SQLite DB (ignored by git)
 ```
 
 ## Prerequisites
 
-- Python 3.9+
-- SQLite (bundled with Python via sqlite3 module)
-- Running backend service on http://127.0.0.1:8000 (for API scripts)
-- Running frontend service on http://127.0.0.1:3000 (for frontend check script)
+- Python 3.9 or newer
+- SQLite support (included with standard Python)
+- Backend service running on port `8000` for API scripts
+- Frontend service running on port `3000` for frontend checks
 
 ## Quick Start
 
-1. Clone and enter the repository.
-2. Create and activate a virtual environment.
-3. Install project dependencies (if/when app dependencies are available in the app folder).
-4. Run scripts from repository root.
+1. Open a terminal at repository root.
+2. Create a virtual environment.
+3. Activate it.
+4. Run one of the verification scripts.
 
-Example (PowerShell):
+PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -51,70 +76,92 @@ python -m venv .venv
 python .\scripts\smoke_test.py
 ```
 
-## Script Reference
+## Runbook
+
+Use this sequence for a fast confidence pass after starting your services.
+
+1. Backend route/auth smoke check
+
+```powershell
+python .\scripts\smoke_test.py
+```
+
+2. Frontend availability check
+
+```powershell
+python .\scripts\check_frontend.py
+```
+
+3. Database date-range and count check
+
+```powershell
+python .\scripts\check_db_dates.py
+```
+
+4. API data payload check (token + endpoint responses)
+
+```powershell
+python .\scripts\check_api_data.py
+```
+
+## Script Catalog
 
 ### API and Frontend Health
 
-- `scripts/smoke_test.py`
-  - Checks key backend routes and login endpoint.
-- `scripts/check_api_data.py`
-  - Logs in and verifies live/history API JSON endpoints.
-- `scripts/check_frontend.py`
-  - Confirms login page is reachable on frontend server.
+- `scripts/smoke_test.py`: checks backend root, dashboard, login API, and docs endpoint.
+- `scripts/check_api_data.py`: logs in, retrieves token, and validates live/history API JSON responses.
+- `scripts/check_frontend.py`: verifies the frontend login page is reachable.
 
 ### SQLite Inspection
 
-- `scripts/inspect_db.py`
-  - Reads root-level `aadhaar_analytics.db` and prints enrollment/daily stats date info.
-- `scripts/check_db_dates.py`
-  - Prints min/max/count for `enrollments`, `daily_stats`, and `updates`.
-- `scripts/inspect_outer_db.py`
-  - Inspects a hardcoded external DB path.
-- `scripts/inspect_db_real.py`
-  - Inspects a hardcoded local DB path and basic table/date metadata.
-- `scripts/check_both_dbs.py`
-  - Compares two hardcoded DB locations and table counts.
-- `scripts/list_tables_outer.py`
-  - Lists tables in `scripts/aadhaar_analytics.db`.
+- `scripts/inspect_db.py`: inspects root DB and prints enrollment + `daily_stats` date details.
+- `scripts/check_db_dates.py`: prints min/max/count for `enrollments`, `daily_stats`, and `updates`.
+- `scripts/inspect_outer_db.py`: inspects an external hardcoded DB path.
+- `scripts/inspect_db_real.py`: inspects a local hardcoded DB path and table/date metadata.
+- `scripts/check_both_dbs.py`: compares two hardcoded DB locations and key table counts.
+- `scripts/list_tables_outer.py`: lists tables in `scripts/aadhaar_analytics.db`.
 
 ### SQLAlchemy Validation
 
-- `scripts/print_db_info.py`
-  - Imports backend DB config and prints effective DB settings.
-- `scripts/query_with_sqlalchemy.py`
-  - Uses ORM session to count `Enrollment` and `DailyStat` records.
-- `scripts/test_insert_enrollment.py`
-  - Inserts a sample enrollment row through ORM, then checks row count.
+- `scripts/print_db_info.py`: prints backend DB configuration values resolved by backend code.
+- `scripts/query_with_sqlalchemy.py`: ORM count check for `Enrollment` and `DailyStat`.
+- `scripts/test_insert_enrollment.py`: inserts a sample enrollment row and verifies count changes.
 
-## Important Notes
+## Configuration Notes
 
-- Several scripts contain hardcoded absolute paths from a local development machine.
-  Update those paths before use in another environment.
-- Some scripts import modules from `aadhaar-portal/backend/...`.
-  Ensure backend code exists in that folder and dependencies are installed.
-- Database files (`*.db`) are ignored by git, so local DB state may differ per developer.
-
-## Recommended Cleanup
-
-To improve portability, consider:
-
-- Replacing hardcoded DB paths with environment variables.
-- Adding a single config module for host URLs and DB paths.
-- Adding a `requirements.txt` or `pyproject.toml` for reproducible setup.
-- Splitting script outputs into logs for easier CI integration.
+- Some scripts include absolute paths from a local machine. Replace these before running in another environment.
+- SQLAlchemy scripts import backend modules from `aadhaar-portal/backend/...`; make sure that code and its dependencies are present.
+- SQLite DB files are git-ignored, so data varies by developer machine.
 
 ## Troubleshooting
 
-- Connection refused on API scripts:
-  - Start backend server on port 8000.
-- Frontend check fails:
-  - Start frontend server on port 3000 and verify route `/pages/login.html`.
-- SQLAlchemy import errors:
-  - Verify backend package exists under `aadhaar-portal/` and dependencies are installed.
-- Missing table errors:
-  - Confirm database initialization/migrations were run before checks.
+### API script fails with connection errors
+
+- Confirm backend is running at `127.0.0.1:8000`.
+- Confirm login credentials used by scripts are valid.
+
+### Frontend script fails
+
+- Confirm frontend is running at `127.0.0.1:3000`.
+- Verify route `/pages/login.html` exists.
+
+### SQLAlchemy import fails
+
+- Confirm app/backend code exists under `aadhaar-portal/`.
+- Install backend dependencies in your active virtual environment.
+
+### DB table missing errors
+
+- Confirm database initialization/migrations have been executed.
+- Confirm script path points to the intended database file.
+
+## Roadmap Improvements
+
+- Replace hardcoded paths with environment variables.
+- Centralize URLs and DB paths in a single config module.
+- Add dependency lock/setup files (`requirements.txt` or `pyproject.toml`).
+- Add automated test/health script wrappers for CI.
 
 ## License
 
-No license file is currently present in this repository.
-Add one if you plan to distribute the project publicly.
+No license file is currently present. Add one before public distribution.
