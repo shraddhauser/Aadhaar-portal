@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aadhaar Analytics Portal — Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:     #0d0d1a;
+      --paper:   #f5f3ee;
+      --saffron: #ff8c00;
+      --red:     #c8102e;
+      --green:   #046a38;
+      --blue:    #003087;
+      --muted:   #6b6b7a;
+      --border:  rgba(13,13,26,.12);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    /* ---- Diagonal split layout ---- */
+    .login-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+
+    /* Left panel — brand side */
+    .brand-panel {
+      position: relative;
+      background: var(--ink);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem;
+      clip-path: polygon(0 0, 92% 0, 100% 100%, 0 100%);
+    }
+
+    .brand-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 30% 40%, rgba(255,140,0,.18) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 70% 70%, rgba(200,16,46,.14) 0%, transparent 70%);
+    }
+
+    .brand-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    .brand-content { position: relative; z-index: 2; }
+
+    .uidai-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 100px;
+      padding: .4rem 1rem .4rem .5rem;
+      margin-bottom: 2.5rem;
+    }
+    .uidai-badge .dot {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--saffron), var(--red));
+      display: flex; align-items: center; justify-content: center;
+      font-size: .55rem; font-weight: 700; color: #fff;
+    }
+    .uidai-badge span { font-size: .75rem; color: rgba(255,255,255,.6); letter-spacing: .08em; text-transform: uppercase; }
+
+    .brand-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.1;
+      margin-bottom: 1.2rem;
+    }
+    .brand-title .accent { color: var(--saffron); }
+
+    .brand-sub {
+      font-size: .95rem;
+      color: rgba(255,255,255,.5);
+      max-width: 360px;
+      line-height: 1.7;
+    }
+
+    .brand-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.2rem;
+      margin-top: 3rem;
+    }
+    .bs-item {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    .bs-item .num {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--saffron);
+    }
+    .bs-item .lbl {
+      font-size: .7rem;
+      color: rgba(255,255,255,.4);
+      margin-top: .2rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .tricolor-strip {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: linear-gradient(to bottom, var(--saffron) 33%, #fff 33% 66%, var(--green) 66%);
+    }
+
+    /* Right panel — form side */
+    .form-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem 5rem;
+      background: var(--paper);
+    }
+
+    .form-header { margin-bottom: 2.5rem; }
+    .form-header h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.9rem;
+      font-weight: 700;
+    }
+    .form-header p {
+      color: var(--muted);
+      margin-top: .4rem;
+      font-size: .9rem;
+    }
+
+    .field { margin-bottom: 1.4rem; }
+    .field label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 500;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .5rem;
+    }
+    .field input {
+      width: 100%;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: .85rem 1rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .95rem;
+      color: var(--ink);
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+    .field input:focus {
+      border-color: var(--saffron);
+      box-shadow: 0 0 0 3px rgba(255,140,0,.12);
+    }
+
+    .btn-login {
+      width: 100%;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: .95rem;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      cursor: pointer;
+      margin-top: .5rem;
+      transition: transform .15s, background .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-login::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--saffron), var(--red));
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .btn-login:hover::after { opacity: 1; }
+    .btn-login:active { transform: scale(.98); }
+    .btn-login span { position: relative; z-index: 1; }
+
+    .error-msg {
+      background: rgba(200,16,46,.08);
+      border-left: 3px solid var(--red);
+      color: var(--red);
+      border-radius: 6px;
+      padding: .7rem 1rem;
+      font-size: .85rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .error-msg.show { display: block; }
+
+    .form-footer {
+      margin-top: 2rem;
+      font-size: .8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .form-footer strong { color: var(--ink); }
+
+    @media (max-width: 768px) {
+      .login-wrap { grid-template-columns: 1fr; }
+      .brand-panel { clip-path: none; padding: 2.5rem 2rem; min-height: 260px; }
+      .brand-stats { grid-template-columns: repeat(3, 1fr); gap: .6rem; }
+      .form-panel { padding: 2.5rem 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <!-- ===== Left: Brand Panel ===== -->
+    <div class="brand-panel">
+      <div class="tricolor-strip"></div>
+      <div class="brand-grid"></div>
+      <div class="brand-content">
+        <div class="uidai-badge">
+          <div class="dot">UID</div>
+          <span>UIDAI — Government of India</span>
+        </div>
+        <h1 class="brand-title">
+          Aadhaar<br/>
+          <span class="accent">Analytics</span><br/>
+          Portal
+        </h1>
+        <p class="brand-sub">
+          A unified web-based platform for analysing Aadhaar enrolment, demographic, and biometric data — delivering live statistics, historical trends, and actionable insights.
+        </p>
+        <div class="brand-stats">
+          <div class="bs-item">
+            <div class="num">1.4B+</div>
+            <div class="lbl">Enrolled</div>
+          </div>
+          <div class="bs-item">
+            <div class="num">36</div>
+            <div class="lbl">States/UTs</div>
+          </div>
+          <div class="bs-item">
+            <div class="num">99%</div>
+            <div class="lbl">Adult coverage</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Right: Form Panel ===== -->
+    <div class="form-panel">
+      <div class="form-header">
+        <h2>Admin Sign In</h2>
+        <p>Enter your credentials to access the analytics portal</p>
+      </div>
+
+      <div id="errorMsg" class="error-msg">Invalid username or password.</div>
+
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="e.g. admin" autocomplete="username" />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+
+      <button class="btn-login" onclick="handleLogin()">
+        <span>Sign In to Portal →</span>
+      </button>
+
+      <p class="form-footer">
+        Default credentials: <strong>admin</strong> / <strong>Admin@1234</strong><br/>
+        Change these immediately in production.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:8000/api';
+
+    async function handleLogin() {
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value;
+      const err  = document.getElementById('errorMsg');
+      err.classList.remove('show');
+
+      if (!user || !pass) { err.textContent = 'Please enter username and password.'; err.classList.add('show'); return; }
+
+      try {
+        const body = new URLSearchParams({ username: user, password: pass });
+        const res  = await fetch(`${API}/auth/login`, { method: 'POST', body });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.detail || 'Login failed');
+
+        // Persist token and redirect
+        sessionStorage.setItem('token',    data.access_token);
+        sessionStorage.setItem('role',     data.role);
+        sessionStorage.setItem('fullName', data.full_name);
+        window.location.href = 'dashboard.html';
+      } catch (e) {
+        err.textContent = e.message;
+        err.classList.add('show');
+      }
+    }
+
+    // Allow Enter key to submit
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+  </script>
+</body>
+</html>
