@@ -101,5 +101,3 @@ env.bak/
 .DS_Store
 Thumbs.db
 
-# Remove .env from ignore to include it in git
-!.env
