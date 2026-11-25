@@ -23,9 +23,14 @@ from _credentials import get_admin_credentials  # noqa: E402
 MIN_PASSWORD_LENGTH = 8
 
 
+ROLES = ("SuperAdmin", "Analyst", "Viewer")
+
+
 def create_admin(username: str, password: str, reset: bool = False,
-                 full_name: str = "Administrator") -> str:
-    """Create a SuperAdmin user. Returns 'created', 'reset' or 'exists'."""
+                 full_name: str = "Administrator", role: str = "SuperAdmin") -> str:
+    """Create a user (SuperAdmin by default). Returns 'created', 'reset' or 'exists'."""
+    if role not in ROLES:
+        raise ValueError(f"Role must be one of {', '.join(ROLES)}.")
     if len(password) < MIN_PASSWORD_LENGTH:
         raise ValueError(f"Password must be at least {MIN_PASSWORD_LENGTH} characters.")
 
@@ -47,7 +52,7 @@ def create_admin(username: str, password: str, reset: bool = False,
             username=username,
             password_hash=pwd_context.hash(password),
             full_name=full_name,
-            role="SuperAdmin",
+            role=role,
         ))
         db.commit()
         return "created"

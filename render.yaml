@@ -1,0 +1,27 @@
+# Render Blueprint for the public demo: one free web service.
+# FastAPI serves both the API and the static frontend. The SQLite database is
+# rebuilt from data/*.csv (synthetic data) when the service starts, so it
+# resets on every deploy or restart. Uploads are disabled (DEMO_MODE).
+services:
+  - type: web
+    name: aadhaar-analytics-portal
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scripts/demo_bootstrap.py && uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ENV
+        value: production
+      - key: DEMO_MODE
+        value: "true"
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: DEMO_USERNAME
+        value: demo
+      - key: DEMO_PASSWORD   # demo-only, read-only login; set it in the Render dashboard
+        sync: false
+      - key: ANTHROPIC_API_KEY   # optional; without it the chatbot returns 503
+        sync: false

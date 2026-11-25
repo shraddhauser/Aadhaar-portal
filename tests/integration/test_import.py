@@ -77,3 +77,11 @@ def test_no_token_is_401(client):
 def test_non_admin_role_is_403(client, viewer_headers):
     assert _upload(client, viewer_headers, VALID_CSV).status_code == 403
     assert client.get("/api/import/status", headers=viewer_headers).status_code == 403
+
+
+def test_uploads_are_disabled_in_demo_mode(client, auth_headers, monkeypatch, db_session):
+    monkeypatch.setattr(data_import, "DEMO_MODE", True)
+    resp = _upload(client, auth_headers, VALID_CSV)
+    assert resp.status_code == 403
+    assert "demo" in resp.json()["detail"].lower()
+    assert db_session.query(Enrollment).count() == 0

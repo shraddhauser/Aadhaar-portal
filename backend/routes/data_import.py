@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 # Every /api/import/* route requires a SuperAdmin token.
 router = APIRouter(dependencies=[Depends(require_admin)])
 
+DEMO_MODE = os.getenv("DEMO_MODE", "").strip().lower() in ("1", "true", "yes")
 MAX_UPLOAD_BYTES = int(float(os.getenv("MAX_UPLOAD_MB", "10")) * 1024 * 1024)
 _CHUNK = 1024 * 1024
 
@@ -49,6 +50,8 @@ async def read_csv_upload(file: UploadFile, kind: str) -> pd.DataFrame:
     Raises 413 if the file is over MAX_UPLOAD_MB, and 400 if it is empty,
     not a parseable CSV, or missing required columns (listed in the error).
     """
+    if DEMO_MODE:
+        raise HTTPException(status_code=403, detail="Uploads are disabled in the public demo.")
     if not (file.filename or "").lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="File must be a .csv file.")
 
