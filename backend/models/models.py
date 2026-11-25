@@ -5,7 +5,7 @@ SQLAlchemy ORM models mirroring the database schema.
 
 from sqlalchemy import (
     Column, Integer, String, Enum, Boolean,
-    Date, Text, SmallInteger, ForeignKey, UniqueConstraint, DateTime
+    Date, Text, SmallInteger, ForeignKey, UniqueConstraint, DateTime, Index
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -43,6 +43,12 @@ class Enrollment(Base):
     created_at        = Column(DateTime, server_default=func.now())
 
     region            = relationship("Region", back_populates="enrollments")
+
+    # Live/history queries filter by date, often within a region.
+    __table_args__ = (
+        Index("ix_enrollments_date", "enrollment_date"),
+        Index("ix_enrollments_region_date", "region_id", "enrollment_date"),
+    )
     biometric         = relationship("BiometricData", back_populates="enrollment", uselist=False)
 
 
@@ -64,12 +70,17 @@ class Update(Base):
 
     region        = relationship("Region", back_populates="updates")
 
+    __table_args__ = (
+        Index("ix_updates_date", "update_date"),
+        Index("ix_updates_region_date", "region_id", "update_date"),
+    )
+
 
 class BiometricData(Base):
     __tablename__ = "biometric_data"
 
     biometric_id        = Column(Integer, primary_key=True, autoincrement=True)
-    enrollment_id       = Column(Integer, ForeignKey("enrollments.enrollment_id"), nullable=False)
+    enrollment_id       = Column(Integer, ForeignKey("enrollments.enrollment_id"), nullable=False, index=True)
     fingerprint_quality = Column(SmallInteger)
     iris_quality        = Column(SmallInteger)
     photo_quality       = Column(SmallInteger)
@@ -86,7 +97,7 @@ class Anomaly(Base):
     anomaly_type = Column(Enum("Duplicate", "Quality", "Surge", "Drop", "Mismatch"), nullable=False)
     severity     = Column(Enum("Low", "Medium", "High", "Critical"), nullable=False)
     description  = Column(Text)
-    detected_on  = Column(Date, nullable=False)
+    detected_on  = Column(Date, nullable=False, index=True)
     resolved     = Column(Boolean, default=False)
     created_at   = Column(DateTime, server_default=func.now())
 
@@ -105,7 +116,12 @@ class DailyStat(Base):
     pending_count     = Column(Integer, default=0)
     rejected_count    = Column(Integer, default=0)
 
-    __table_args__ = (UniqueConstraint("stat_date", "region_id"),)
+    # The unique (stat_date, region_id) key also serves date-range filters;
+    # the extra index serves per-region lookups across dates.
+    __table_args__ = (
+        UniqueConstraint("stat_date", "region_id"),
+        Index("ix_daily_stats_region_date", "region_id", "stat_date"),
+    )
 
     region            = relationship("Region", back_populates="daily_stats")
 

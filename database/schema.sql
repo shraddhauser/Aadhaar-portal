@@ -124,6 +124,18 @@ INSERT INTO regions (state_name, district_name, region_code) VALUES
 ('Delhi','New Delhi','DL-NDL');
 
 -- -------------------------------------------------------------
+-- Indexes for the date / region filters used by the analytics API
+-- (kept in sync with backend/models/models.py)
+-- -------------------------------------------------------------
+CREATE INDEX ix_enrollments_date         ON enrollments (enrollment_date);
+CREATE INDEX ix_enrollments_region_date  ON enrollments (region_id, enrollment_date);
+CREATE INDEX ix_updates_date             ON updates (update_date);
+CREATE INDEX ix_updates_region_date      ON updates (region_id, update_date);
+CREATE INDEX ix_biometric_data_enrollment_id ON biometric_data (enrollment_id);
+CREATE INDEX ix_anomalies_detected_on    ON anomalies (detected_on);
+CREATE INDEX ix_daily_stats_region_date  ON daily_stats (region_id, stat_date);
+
+-- -------------------------------------------------------------
 -- Admin users are not seeded here. Create one with:
 --   python scripts/create_admin.py
 -- -------------------------------------------------------------
