@@ -1,7 +1,7 @@
 from datetime import date
 from pathlib import Path
 import sys
-proj = Path(__file__).resolve().parent.parent / 'aadhaar-portal'
+proj = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(proj))
 from backend.database import SessionLocal
 from backend.models.models import Enrollment, Region
@@ -24,7 +24,7 @@ finally:
 
 # check via sqlite3
 import sqlite3
-p = r'c:\Users\Nitin\Desktop\Personal Projects\Adhaar Portal\aadhaar-portal\aadhaar-portal\aadhaar_analytics.db'
+p = proj / 'aadhaar_analytics.db'
 conn = sqlite3.connect(p)
 cur = conn.cursor()
 cur.execute('SELECT COUNT(*) FROM enrollments')

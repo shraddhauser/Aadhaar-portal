@@ -1,8 +1,6 @@
 import sys
 from pathlib import Path
-outer_root = Path(__file__).resolve().parent.parent
-inner_root = outer_root / 'aadhaar-portal'
-sys.path.insert(0, str(inner_root))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import backend.database as db
 import os
 
