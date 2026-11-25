@@ -94,6 +94,15 @@ def test_bad_api_key_message_names_the_setting(client, auth_headers, fake_claude
     assert "ANTHROPIC_API_KEY" in resp.json()["detail"]
 
 
+def test_empty_env_overrides_use_defaults(client, auth_headers, fake_claude, monkeypatch):
+    calls, _ = fake_claude
+    monkeypatch.setenv("ANTHROPIC_MODEL", "")
+    monkeypatch.setenv("ANTHROPIC_EFFORT", "")  # as written by .env.template
+    client.post(URL, headers=auth_headers, json={"message": "hi"})
+    assert calls[0]["model"] == chat.DEFAULT_MODEL
+    assert calls[0]["output_config"] == {"effort": chat.DEFAULT_EFFORT}
+
+
 def test_no_fallbacks_for_models_without_them(client, auth_headers, fake_claude, monkeypatch):
     calls, _ = fake_claude
     monkeypatch.setenv("ANTHROPIC_MODEL", "claude-haiku-5-5")

@@ -360,7 +360,7 @@ async def chat_ask(
         max_tokens=MAX_OUTPUT_TOKENS,
         system=system_prompt,
         messages=messages,
-        output_config={"effort": os.getenv("ANTHROPIC_EFFORT", DEFAULT_EFFORT)},
+        output_config={"effort": os.getenv("ANTHROPIC_EFFORT", "").strip() or DEFAULT_EFFORT},
     )
     if model in FALLBACK_MODELS:
         # If a safety classifier declines, the API re-runs the request on a
