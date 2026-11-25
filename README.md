@@ -156,7 +156,11 @@ python -m uvicorn backend.main:app --port 8000
 
 Open http://localhost:8000 and log in with the admin account you created.
 API docs are at http://localhost:8000/docs. Full guide, MySQL and Render
-deployment: [docs/SETUP.md](docs/SETUP.md).
+deployment: [docs/SETUP.md](docs/SETUP.md). Something not working:
+[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
+
+With `make` installed, the same steps are `make install`, `make setup` and
+`make run` (also `make install-dev`, `make test`, `make lint`).
 
 ## Running tests
 
@@ -184,7 +188,7 @@ frontend/           pages/ (login, dashboard), js/ (app, chatbot, config), css/
 data/               synthetic CSVs
 scripts/            setup, data generation, create_admin, demo bootstrap, debug helpers
 tests/              unit/ and integration/ pytest suites
-docs/               setup, data, API, architecture, decisions, testing, images
+docs/               setup, data, API, architecture, decisions, testing, troubleshooting, images
 render.yaml         public demo deployment
 ```
 
