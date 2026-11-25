@@ -14,10 +14,10 @@ import os
 import logging
 import time
 from datetime import date, timedelta
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -34,14 +34,20 @@ logger = logging.getLogger(__name__)
 # Pydantic schemas
 # ---------------------------------------------------------------------------
 
+# Input limits: longer requests are rejected with 422 before any LLM call.
+MAX_MESSAGE_CHARS = 2000
+MAX_HISTORY_MESSAGES = 20
+MAX_HISTORY_MESSAGE_CHARS = 8000  # assistant replies can be ~1024 tokens
+
+
 class ChatMessage(BaseModel):
-    role: str          # "user" or "assistant"
-    content: str
+    role: Literal["user", "assistant"]
+    content: str = Field(..., max_length=MAX_HISTORY_MESSAGE_CHARS)
 
 
 class ChatRequest(BaseModel):
-    message: str
-    history: list[ChatMessage] = []
+    message: str = Field(..., min_length=1, max_length=MAX_MESSAGE_CHARS)
+    history: list[ChatMessage] = Field(default_factory=list, max_length=MAX_HISTORY_MESSAGES)
 
 
 class ChatResponse(BaseModel):
@@ -287,6 +293,13 @@ async def chat_ask(
             status_code=503,
             detail="Chatbot is not configured. Please set ANTHROPIC_API_KEY in your .env file.",
         )
+    try:
+        import anthropic
+    except ImportError:
+        raise HTTPException(
+            status_code=503,
+            detail="Chatbot is not available: the 'anthropic' package is not installed.",
+        )
 
     # 1. Gather live data from the database
     try:
@@ -301,7 +314,7 @@ async def chat_ask(
     # 3. Build message list for Anthropic Claude
     # Claude uses a separate system parameter, not a system message in the list
     messages = []
-    for msg in req.history[-20:]:  # Keep last 20 messages for context window
+    for msg in req.history:  # at most MAX_HISTORY_MESSAGES, enforced by ChatRequest
         messages.append({
             "role": msg.role,  # "user" or "assistant"
             "content": msg.content,
@@ -315,8 +328,6 @@ async def chat_ask(
     last_error = None
     for attempt in range(MAX_RETRIES):
         try:
-            import anthropic
-
             client = anthropic.Anthropic(api_key=api_key)
 
             response = client.messages.create(

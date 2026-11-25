@@ -72,6 +72,7 @@ const ChatBot = (() => {
               id="chatbotInput"
               placeholder="Ask about enrollments, anomalies, trends..."
               rows="1"
+              maxlength="2000"
               aria-label="Type your question"
             ></textarea>
           </div>
