@@ -40,3 +40,8 @@ node_modules/
 # Secrets: never commit .env (copy .env.template instead)
 .env
 
+
+# Test and coverage output
+.coverage
+htmlcov/
+.pytest_cache/
