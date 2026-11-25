@@ -14,9 +14,6 @@ def _clean(pipeline, **columns):
     return pipeline.clean_and_normalize_enrollment_data(pd.DataFrame(columns))
 
 
-PANDAS3_FILLNA_BUG = pytest.mark.xfail(
-    strict=True, raises=TypeError,
-    reason="Known bug: fillna(ndarray) is rejected by pandas 3.x (requirements.txt does not pin pandas)")
 
 
 @pytest.mark.parametrize("raw,expected", [
@@ -85,7 +82,6 @@ def test_alternative_date_column_name_is_used(pipeline):
     assert str(df["enrollment_date"].iloc[0].date()) == "2024-03-15"
 
 
-@PANDAS3_FILLNA_BUG
 def test_biometric_scores_are_clipped_to_0_100(pipeline):
     df = pipeline.clean_and_normalize_biometric_data(pd.DataFrame({
         "enrollment_date": ["2026-01-01", "2026-01-02"],
@@ -94,3 +90,14 @@ def test_biometric_scores_are_clipped_to_0_100(pipeline):
         "photo_quality": [90, 90],
     }))
     assert df["fingerprint_quality"].tolist() == [100, 0]
+
+
+def test_biometric_rows_with_missing_values_are_dropped_not_invented(pipeline):
+    df = pipeline.clean_and_normalize_biometric_data(pd.DataFrame({
+        "enrollment_date": ["2026-01-01", "2026-01-02", "not a date", "2026-01-04"],
+        "fingerprint_quality": [80, None, 70, "abc"],
+        "iris_quality": [80, 80, 80, 80],
+        "photo_quality": [90, 90, 90, 90],
+    }))
+    assert len(df) == 1
+    assert df["fingerprint_quality"].tolist() == [80]

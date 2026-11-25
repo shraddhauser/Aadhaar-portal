@@ -201,17 +201,19 @@ class DataIngestionPipeline:
         if 'photo_quality' not in df.columns:
             df['photo_quality'] = np.random.randint(60, 95, len(df))
         
-        df['fingerprint_quality'] = df['fingerprint_quality'].fillna(np.random.randint(50, 95, len(df)))
-        df['iris_quality'] = df['iris_quality'].fillna(np.random.randint(50, 95, len(df)))
-        df['photo_quality'] = df['photo_quality'].fillna(np.random.randint(60, 95, len(df)))
-        
         # Enrollment date/ID
         if 'enrollment_date' not in df.columns:
             df['enrollment_date'] = pd.Timestamp.now()
         else:
-            df['enrollment_date'] = pd.to_datetime(df['enrollment_date'], errors='coerce').fillna(pd.Timestamp.now())
-        
+            df['enrollment_date'] = pd.to_datetime(df['enrollment_date'], errors='coerce')
+
+        # Rows with a missing or non-numeric score, or an unparseable date, are
+        # dropped rather than filled with made-up values.
         required_cols = ['fingerprint_quality', 'iris_quality', 'photo_quality', 'enrollment_date']
+        before = len(df)
+        df = df.dropna(subset=required_cols)
+        if len(df) < before:
+            logger.warning(f"Dropped {before - len(df)} biometric rows with missing scores or dates")
         return df[required_cols]
     
     def _map_district_to_region_code(self, district):
