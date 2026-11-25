@@ -26,8 +26,6 @@ def test_valid_csv_adds_rows(client, auth_headers, db_session):
     assert db_session.query(Enrollment).count() == before + 3
 
 
-@pytest.mark.xfail(strict=True, reason="Known bug: uploaded enrolment dates are replaced with "
-                                       "the upload date (see test_ingestion_cleaning.py)")
 def test_upload_keeps_the_dates_from_the_csv(client, auth_headers, db_session):
     _upload(client, auth_headers, VALID_CSV)
     dates = sorted(e.enrollment_date for e in db_session.query(Enrollment).all())

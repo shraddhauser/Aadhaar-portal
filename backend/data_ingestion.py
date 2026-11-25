@@ -48,7 +48,8 @@ class DataIngestionPipeline:
         for date_col in ['enrollment_date', 'date_of_enrollment', 'enrollment_dt']:
             if date_col in df.columns:
                 df['enrollment_date'] = pd.to_datetime(df[date_col], errors='coerce')
-                df = df.drop(date_col, axis=1, errors='ignore')
+                if date_col != 'enrollment_date':  # keep the column we just parsed into
+                    df = df.drop(date_col, axis=1)
         
         # Ensure enrollment_date exists
         if 'enrollment_date' not in df.columns:
@@ -61,8 +62,9 @@ class DataIngestionPipeline:
             'O': 'Other', 'o': 'Other', 'Other': 'Other', 'OTHER': 'Other'
         }
         if 'gender' in df.columns:
+            lower_map = {k.lower(): v for k, v in gender_map.items()}
             df['gender'] = df['gender'].fillna('Other').astype(str).map(
-                lambda x: gender_map.get(x.strip(), 'Other')
+                lambda x: lower_map.get(x.strip().lower(), 'Other')
             )
         else:
             df['gender'] = 'Other'
@@ -133,7 +135,8 @@ class DataIngestionPipeline:
         for date_col in ['update_date', 'date_of_update', 'update_dt']:
             if date_col in df.columns:
                 df['update_date'] = pd.to_datetime(df[date_col], errors='coerce')
-                df = df.drop(date_col, axis=1, errors='ignore')
+                if date_col != 'update_date':  # keep the column we just parsed into
+                    df = df.drop(date_col, axis=1)
         
         if 'update_date' not in df.columns:
             df['update_date'] = pd.Timestamp.now()

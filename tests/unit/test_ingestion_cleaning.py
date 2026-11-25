@@ -14,18 +14,13 @@ def _clean(pipeline, **columns):
     return pipeline.clean_and_normalize_enrollment_data(pd.DataFrame(columns))
 
 
-LOWERCASE_GENDER_BUG = pytest.mark.xfail(
-    strict=True, reason="Known bug: gender_map has 'Male'/'MALE'/'m' but not 'male', so it becomes 'Other'")
-DATE_COLUMN_BUG = pytest.mark.xfail(
-    strict=True, reason="Known bug: the cleaner drops the parsed enrollment_date column, then "
-                        "refills it with the current time, so every row gets today's date")
 PANDAS3_FILLNA_BUG = pytest.mark.xfail(
     strict=True, raises=TypeError,
     reason="Known bug: fillna(ndarray) is rejected by pandas 3.x (requirements.txt does not pin pandas)")
 
 
 @pytest.mark.parametrize("raw,expected", [
-    ("M", "Male"), pytest.param("male", "Male", marks=LOWERCASE_GENDER_BUG),
+    ("M", "Male"), ("male", "Male"), ("female", "Female"),
     ("F", "Female"), ("FEMALE", "Female"), ("O", "Other"), ("unknown", "Other"),
 ])
 def test_gender_is_normalised(pipeline, raw, expected):
@@ -63,18 +58,31 @@ def test_unknown_district_currently_defaults_to_mumbai(pipeline):
     assert df["region_code"].iloc[0] == "MH-MUM"
 
 
-@DATE_COLUMN_BUG
 def test_parsed_date_is_kept(pipeline):
     df = _clean(pipeline, enrollment_date=["2024-03-15"], gender=["Male"], age=[30],
                 region_code=["MH-MUM"])
     assert str(df["enrollment_date"].iloc[0].date()) == "2024-03-15"
 
 
-@DATE_COLUMN_BUG
 def test_rows_without_a_date_are_dropped(pipeline):
     df = _clean(pipeline, enrollment_date=["2026-01-01", None], gender=["Male", "Male"],
                 age=[30, 40], region_code=["MH-MUM", "MH-MUM"])
     assert len(df) == 1
+
+
+def test_demographic_update_date_is_kept(pipeline):
+    df = pipeline.clean_and_normalize_demographic_data(pd.DataFrame({
+        "update_date": ["2024-03-15"], "update_type": ["Address"], "region_code": ["MH-MUM"],
+    }))
+    assert str(df["update_date"].iloc[0].date()) == "2024-03-15"
+
+
+def test_alternative_date_column_name_is_used(pipeline):
+    df = pipeline.clean_and_normalize_enrollment_data(pd.DataFrame({
+        "date_of_enrollment": ["2024-03-15"], "gender": ["Male"], "age": [30],
+        "region_code": ["MH-MUM"],
+    }))
+    assert str(df["enrollment_date"].iloc[0].date()) == "2024-03-15"
 
 
 @PANDAS3_FILLNA_BUG
