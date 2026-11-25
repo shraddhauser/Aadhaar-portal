@@ -8,7 +8,7 @@ import logging
 import os
 import secrets
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
+from backend.rate_limit import LOGIN_RATE_LIMIT, limiter
 from backend.models.models import AdminUser
 
 router = APIRouter()
@@ -105,8 +106,13 @@ def get_current_admin(token: str = Depends(oauth2_scheme), db: Session = Depends
 # ----- Endpoints -----
 
 @router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    """Authenticate admin and return a JWT access token."""
+@limiter.limit(LOGIN_RATE_LIMIT)
+def login(
+    request: Request,  # used by the rate limiter (client IP)
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
+    """Authenticate admin and return a JWT access token (rate-limited per IP)."""
     admin = db.query(AdminUser).filter(AdminUser.username == form_data.username).first()
     if not admin or not verify_password(form_data.password, admin.password_hash):
         raise HTTPException(

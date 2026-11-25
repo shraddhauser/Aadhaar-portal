@@ -11,6 +11,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+from backend.rate_limit import limiter
 from backend.routes import auth, live_stats, history, insights, anomalies, data_export, data_import, chat
 
 app = FastAPI(
@@ -20,6 +24,10 @@ app = FastAPI(
 )
 
 logger = logging.getLogger("backend")
+
+# Rate limits (login, chat) — see backend/rate_limit.py; exceeding one returns 429.
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # -----------------------------------------------------------------
 # CORS — only the origins listed in CORS_ORIGINS (comma-separated).

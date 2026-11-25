@@ -17,12 +17,13 @@ import logging
 from datetime import date, timedelta
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from backend.database import get_db
+from backend.rate_limit import CHAT_RATE_LIMIT, limiter
 from backend.models.models import (
     DailyStat, Enrollment, Update, Anomaly, Region, BiometricData,
 )
@@ -302,7 +303,9 @@ FALLBACK_MODELS = {"claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5",
                    "claude-fable-5-2", "claude-fable-5-1"}
 
 @router.post("/ask", response_model=ChatResponse)
+@limiter.limit(CHAT_RATE_LIMIT)
 async def chat_ask(
+    request: Request,  # used by the rate limiter (client IP)
     req: ChatRequest,
     db: Session = Depends(get_db),
     _: object = Depends(get_current_admin),

@@ -30,6 +30,7 @@ from sqlalchemy.pool import StaticPool  # noqa: E402
 from backend.data_ingestion import DataIngestionPipeline  # noqa: E402
 from backend.database import Base, get_db  # noqa: E402
 from backend.main import app  # noqa: E402
+from backend.rate_limit import limiter  # noqa: E402
 from backend.models.models import AdminUser, Enrollment, Region  # noqa: E402
 from backend.routes.auth import pwd_context  # noqa: E402
 
@@ -91,6 +92,14 @@ def add_enrollments(db, rows: list[SeedRow]) -> None:
     )
     db.commit()
     DataIngestionPipeline(db).aggregate_daily_stats()
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limits():
+    """Rate-limit counters are global; start every test from zero."""
+    limiter.reset()
+    yield
+    limiter.reset()
 
 
 @pytest.fixture
