@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# VS Code settings
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python egg files
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Backup files
+*.bak
+*.swp
+*.tmp
+
+# Ignore zip archives (optional)
+*.zip
+
+# Node modules (if any frontend uses npm)
+node_modules/
+
+# Ignore nothing else so all code, database, and .env are included
+# (Remove .env below if you want to share it)
+# .env
+
+# If you want to share .env, do NOT include it here.

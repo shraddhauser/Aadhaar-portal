@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aadhaar Analytics Portal — Dashboard</title>
+  <meta name="description" content="Aadhaar data analytics dashboard — live statistics, historical trends, insights, and anomaly detection."/>
+  <link rel="stylesheet" href="../css/styles.css"/>
+  <link rel="stylesheet" href="../css/chatbot.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ============================================================
+     SIDEBAR
+============================================================ -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-grid"></div>
+
+  <div class="sidebar-logo">
+    <div class="logo-pill">
+      <div class="logo-icon">UID</div>
+      <div class="logo-text">
+        <div class="t1">Aadhaar Portal</div>
+        <div class="t2">Analytics Dashboard</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">Main Menu</div>
+
+  <div class="nav-item active" onclick="showPage('live')" id="nav-live">
+    <span class="icon">📊</span> Live Statistics
+  </div>
+  <div class="nav-item" onclick="showPage('history')" id="nav-history">
+    <span class="icon">📈</span> Past History
+  </div>
+  <div class="nav-item" onclick="showPage('insights')" id="nav-insights">
+    <span class="icon">💡</span> Insights &amp; Improvement
+  </div>
+  <div class="nav-item" onclick="showPage('anomalies')" id="nav-anomalies">
+    <span class="icon">⚠️</span> Anomalies
+    <span class="badge" id="anomalyBadge">—</span>
+  </div>
+  <div class="nav-item" onclick="showPage('methodology')" id="nav-methodology">
+    <span class="icon">🔬</span> Methodology
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar" id="userAvatar">A</div>
+      <div class="user-info">
+        <div class="name" id="userName">Admin</div>
+        <div class="role" id="userRole">SuperAdmin</div>
+      </div>
+      <button class="btn-logout" onclick="logout()" title="Sign out">⏻</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ============================================================
+     MAIN CONTENT
+============================================================ -->
+<main class="main">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div>
+      <h1 id="pageTitle">Live Statistics</h1>
+      <div class="crumb" id="pageCrumb">Real-time enrolment &amp; update metrics</div>
+    </div>
+    <div class="filter-row">
+      <select id="regionFilter">
+        <option value="">All Regions</option>
+      </select>
+      <label class="alltime-toggle" style="margin-left:.5rem;display:flex;align-items:center;font-size:.9rem;color:var(--text-secondary)">
+        <input type="checkbox" id="useAllTime" style="margin-right:.4rem" />
+        Use all-time if recent empty
+      </label>
+      <input type="date" id="startDate"/>
+      <input type="date" id="endDate"/>
+      <button class="btn-apply" onclick="applyFilters()">Apply</button>
+      <button class="btn-export" onclick="exportCSV()">⬇ CSV</button>
+      <button class="btn-export" onclick="exportPDF()">📄 PDF</button>
+    </div>
+  </div>
+
+  <!-- ============ PAGE: LIVE STATS ============ -->
+  <section class="page active" id="page-live">
+    <div class="kpi-grid" id="kpiGrid">
+      <!-- Shimmer placeholders -->
+      <div class="kpi-card blue shimmer" style="height:110px"></div>
+      <div class="kpi-card orange shimmer" style="height:110px"></div>
+      <div class="kpi-card green shimmer" style="height:110px"></div>
+      <div class="kpi-card amber shimmer" style="height:110px"></div>
+      <div class="kpi-card red shimmer" style="height:110px"></div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card" id="genderChartCard">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Gender Distribution</div>
+            <div class="chart-sub">Last 30 days</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="genderChart"></canvas></div>
+      </div>
+
+      <div class="chart-card" id="ageChartCard">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Age Group Distribution</div>
+            <div class="chart-sub">Last 30 days</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="ageChart"></canvas></div>
+      </div>
+
+      <div class="chart-card" id="statusChartCard">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Enrollment Status Breakdown</div>
+            <div class="chart-sub">All time</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="statusChart"></canvas></div>
+      </div>
+
+      <div class="chart-card" id="updateChartCard">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Update Request Types</div>
+            <div class="chart-sub">Last 30 days</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="updateChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Auto-refresh indicator -->
+    <div style="text-align:center;padding:.5rem 0">
+      <span class="refresh-indicator">
+        <span class="refresh-dot"></span>
+        Auto-refreshing every 60 seconds
+      </span>
+    </div>
+  </section>
+
+  <!-- ============ PAGE: HISTORY ============ -->
+  <section class="page" id="page-history">
+    <div class="charts-grid">
+      <div class="chart-card wide" id="monthlyChartCard">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Monthly Enrollment &amp; Update Trend</div>
+            <div class="chart-sub" id="histYear">Year 2024</div>
+          </div>
+          <select id="yearSelect" class="year-select" onchange="loadMonthlyTrend()">
+            <option>2024</option><option>2023</option><option>2022</option>
+          </select>
+        </div>
+        <div class="chart-wrap tall"><canvas id="monthlyChart"></canvas></div>
+      </div>
+
+      <div class="chart-card wide" id="yoyChartCard">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Year-over-Year Enrollment Growth</div>
+            <div class="chart-sub">Total enrollments per year</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="yoyChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="table-card" id="regionalTableCard">
+      <div class="table-header">
+        <h3>Regional Comparison</h3>
+        <span class="pill blue" id="rangeLabel">—</span>
+      </div>
+      <table class="tbl" id="regionalTable">
+        <thead>
+          <tr>
+            <th>State</th><th>District</th><th>Enrollments</th><th>Updates</th><th>Trend</th>
+          </tr>
+        </thead>
+        <tbody id="regionalTbody">
+          <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-secondary)">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ PAGE: INSIGHTS ============ -->
+  <section class="page" id="page-insights">
+    <div class="section-title"><span class="dot"></span> AI-Powered Recommendations</div>
+    <div class="insight-cards" id="insightList">
+      <div class="kpi-card shimmer" style="height:80px"></div>
+      <div class="kpi-card shimmer" style="height:80px"></div>
+    </div>
+
+    <div class="section-title"><span class="dot"></span> Biometric Quality Scores</div>
+    <div class="quality-grid" id="qualityGrid">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card wide" id="updateHistoryChartCard">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Update Requests by Type &amp; Status</div>
+            <div class="chart-sub">Breakdown for selected date range</div>
+          </div>
+        </div>
+        <div class="chart-wrap tall"><canvas id="updateHistoryChart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PAGE: ANOMALIES ============ -->
+  <section class="page" id="page-anomalies">
+    <div class="kpi-grid">
+      <div class="kpi-card red" id="anomalyCritCard">
+        <div class="kpi-label">Unresolved Critical</div>
+        <div class="kpi-value" id="critCount">—</div>
+        <span class="kpi-icon">🚨</span>
+      </div>
+      <div class="kpi-card orange" id="anomalyHighCard">
+        <div class="kpi-label">Unresolved High</div>
+        <div class="kpi-value" id="highCount">—</div>
+        <span class="kpi-icon">⚠️</span>
+      </div>
+      <div class="kpi-card blue" id="anomalyTotalCard">
+        <div class="kpi-label">Total Unresolved</div>
+        <div class="kpi-value" id="totalAnomaly">—</div>
+        <span class="kpi-icon">🔍</span>
+      </div>
+    </div>
+
+    <div class="table-card" id="anomalyTableCard">
+      <div class="table-header">
+        <h3>Anomaly Log</h3>
+        <div class="inline-filters">
+          <select id="severityFilter" onchange="loadAnomalies()">
+            <option value="">All Severities</option>
+            <option>Critical</option><option>High</option>
+            <option>Medium</option><option>Low</option>
+          </select>
+        </div>
+      </div>
+      <table class="tbl" id="anomalyTable">
+        <thead>
+          <tr>
+            <th>ID</th><th>Type</th><th>Severity</th><th>Region</th>
+            <th>Detected On</th><th>Description</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="anomalyTbody">
+          <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-secondary)">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ PAGE: METHODOLOGY ============ -->
+  <section class="page" id="page-methodology">
+    <div class="charts-grid">
+      <div class="chart-card" id="methodOverviewCard">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Project Overview</div>
+            <div class="chart-sub">Submitted by Shreyas, Shraddha, Abid, Zail</div>
+          </div>
+        </div>
+        <p style="font-size:.86rem;line-height:1.8;color:var(--text-secondary)">
+          This portal analyses Aadhaar enrolment, demographic, and biometric datasets to uncover societal trends and anomalies. It integrates live statistics, historical trend analysis, and an AI-powered recommendation framework — supporting data-driven decisions for policymakers and UIDAI administrators.
+        </p>
+        <br/>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem">
+          <span class="pill orange">FastAPI Backend</span>
+          <span class="pill blue">MySQL Database</span>
+          <span class="pill green">Chart.js Visualisations</span>
+          <span class="pill gray">JWT Auth</span>
+          <span class="pill orange">PDF/CSV Export</span>
+        </div>
+      </div>
+
+      <div class="chart-card" id="methodModulesCard">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">System Modules</div>
+            <div class="chart-sub">Architecture layers</div>
+          </div>
+        </div>
+        <table class="tbl">
+          <thead><tr><th>Module</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pill blue">Auth</span></td><td>JWT-based admin login</td></tr>
+            <tr><td><span class="pill blue">Live Stats</span></td><td>Real-time KPI metrics</td></tr>
+            <tr><td><span class="pill green">History</span></td><td>Monthly/yearly trend analysis</td></tr>
+            <tr><td><span class="pill gray">Insights</span></td><td>Rule-based recommendations</td></tr>
+            <tr><td><span class="pill red">Anomalies</span></td><td>Irregularity detection engine</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="flow-diagram" id="methodFlowDiagram">
+      <div class="section-title" style="justify-content:center"><span class="dot"></span> Methodological Framework</div>
+      <div class="flow-nodes">
+        <div class="flow-node start">▶ Start</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node collect">📥 Data Collection (Enrolment · Demographic · Biometric)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node preproc">🔧 Data Preprocessing (Cleaning · Validation · Normalisation)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node store">🗄 Data Storage (Centralised MySQL Database)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node analyse">🔬 Data Analysis (Pattern Detection · Trend Analysis · Anomaly Identification)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node split">⬡ Decision Split</div>
+        <div class="flow-branch">
+          <div class="flow-node live">📊 Live Statistics</div>
+          <div class="flow-node hist">📈 Past History Analysis</div>
+          <div class="flow-node pred">🔮 Predictive Indicators</div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node viz">📉 Visualisation &amp; Dashboard (Charts · Graphs · Reports)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node insight">💡 Insight Generation (Key Findings &amp; Observations)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node improve">🚀 Improvement &amp; Recommendation Framework</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node user">🖥 User Interaction (View · Filter · Export Reports)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node end">⏹ End</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Application JavaScript -->
+<script src="../js/app.js"></script>
+<script src="../js/chatbot.js"></script>
+</body>
+</html>

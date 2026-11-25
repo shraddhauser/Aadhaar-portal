@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aadhaar Analytics Portal — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
+    rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --ink: #0d0d1a;
+      --paper: #f5f3ee;
+      --surface: #ffffff;
+      --saffron: #ff8c00;
+      --red: #c8102e;
+      --green: #046a38;
+      --blue: #003087;
+      --indigo: #3d5a99;
+      --muted: #6b6b7a;
+      --border: rgba(13, 13, 26, .1);
+      --shadow-sm: 0 1px 4px rgba(0, 0, 0, .06);
+      --shadow-md: 0 4px 20px rgba(0, 0, 0, .08);
+      --nav-w: 240px;
+      --top-h: 60px;
+    }
+
+    html,
+    body {
+      height: 100%;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    /* ======================================================
+       SIDEBAR NAV
+    ====================================================== */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--nav-w);
+      height: 100vh;
+      background: var(--ink);
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      overflow: hidden;
+    }
+
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 40% at 50% 10%, rgba(255, 140, 0, .12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .sidebar-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, .02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .02) 1px, transparent 1px);
+      background-size: 30px 30px;
+      pointer-events: none;
+    }
+
+    .sidebar-logo {
+      padding: 1.4rem 1.5rem 1.2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
+      position: relative;
+      z-index: 2;
+    }
+
+    .logo-pill {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+
+    .logo-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--saffron), var(--red));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: .65rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: .02em;
+    }
+
+    .logo-text {
+      line-height: 1.2;
+    }
+
+    .logo-text .t1 {
+      font-family: 'Syne', sans-serif;
+      font-size: .88rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .logo-text .t2 {
+      font-size: .7rem;
+      color: rgba(255, 255, 255, .35);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .sidebar-section {
+      padding: .8rem 1rem .3rem;
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: rgba(255, 255, 255, .25);
+      position: relative;
+      z-index: 2;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .62rem 1rem .62rem 1.2rem;
+      margin: .1rem .5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      color: rgba(255, 255, 255, .5);
+      font-size: .85rem;
+      transition: background .2s, color .2s;
+      position: relative;
+      z-index: 2;
+      user-select: none;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, .06);
+      color: rgba(255, 255, 255, .8);
+    }
+
+    .nav-item.active {
+      background: rgba(255, 140, 0, .15);
+      color: var(--saffron);
+      font-weight: 500;
+    }
+
+    .nav-item .icon {
+      font-size: 1rem;
+      width: 20px;
+      text-align: center;
+    }
+
+    .nav-item .badge {
+      margin-left: auto;
+      background: var(--red);
+      color: #fff;
+      font-size: .6rem;
+      font-weight: 700;
+      border-radius: 100px;
+      padding: .1rem .45rem;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 1rem 1.2rem;
+      border-top: 1px solid rgba(255, 255, 255, .06);
+      position: relative;
+      z-index: 2;
+    }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--saffron), var(--red));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: .7rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .user-info .name {
+      font-size: .82rem;
+      color: rgba(255, 255, 255, .8);
+      font-weight: 500;
+    }
+
+    .user-info .role {
+      font-size: .7rem;
+      color: rgba(255, 255, 255, .35);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .btn-logout {
+      margin-left: auto;
+      background: rgba(255, 255, 255, .06);
+      border: none;
+      border-radius: 6px;
+      padding: .35rem .55rem;
+      color: rgba(255, 255, 255, .4);
+      cursor: pointer;
+      font-size: .75rem;
+      transition: background .2s, color .2s;
+    }
+
+    .btn-logout:hover {
+      background: rgba(200, 16, 46, .2);
+      color: var(--red);
+    }
+
+    /* ======================================================
+       MAIN CONTENT
+    ====================================================== */
+    .main {
+      margin-left: var(--nav-w);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      height: var(--top-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 2rem;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .topbar .crumb {
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    .filter-row {
+      margin-left: auto;
+      display: flex;
+      gap: .6rem;
+      align-items: center;
+    }
+
+    .filter-row select,
+    .filter-row input {
+      border: 1.5px solid var(--border);
+      background: var(--paper);
+      border-radius: 8px;
+      padding: .4rem .75rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .82rem;
+      color: var(--ink);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .filter-row select:focus,
+    .filter-row input:focus {
+      border-color: var(--saffron);
+    }
+
+    .btn-apply {
+      background: var(--saffron);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: .42rem .9rem;
+      font-family: 'Syne', sans-serif;
+      font-size: .8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+
+    .btn-apply:hover {
+      opacity: .85;
+    }
+
+    .btn-export {
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: .42rem .9rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+
+    .btn-export:hover {
+      opacity: .75;
+    }
+
+    .page {
+      flex: 1;
+      padding: 2rem;
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    /* ======================================================
+       KPI CARDS
+    ====================================================== */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.4rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform .2s, box-shadow .2s;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+    }
+
+    .kpi-card.orange::before {
+      background: var(--saffron);
+    }
+
+    .kpi-card.red::before {
+      background: var(--red);
+    }
+
+    .kpi-card.green::before {
+      background: var(--green);
+    }
+
+    .kpi-card.blue::before {
+      background: var(--blue);
+    }
+
+    .kpi-card.indigo::before {
+      background: var(--indigo);
+    }
+
+    .kpi-label {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+      margin-bottom: .5rem;
+    }
+
+    .kpi-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .kpi-icon {
+      position: absolute;
+      right: 1.2rem;
+      top: 1.2rem;
+      font-size: 1.6rem;
+      opacity: .12;
+    }
+
+    .kpi-delta {
+      display: inline-flex;
+      align-items: center;
+      gap: .2rem;
+      font-size: .75rem;
+      margin-top: .4rem;
+      color: var(--muted);
+    }
+
+    .kpi-delta.up {
+      color: var(--green);
+    }
+
+    .kpi-delta.down {
+      color: var(--red);
+    }
+
+    /* ======================================================
+       CHART CARDS
+    ====================================================== */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.4rem;
+    }
+
+    .chart-card.wide {
+      grid-column: 1 / -1;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.2rem;
+    }
+
+    .chart-title {
+      font-family: 'Syne', sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+    }
+
+    .chart-sub {
+      font-size: .75rem;
+      color: var(--muted);
+      margin-top: .15rem;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 240px;
+    }
+
+    .chart-wrap.tall {
+      height: 320px;
+    }
+
+    /* ======================================================
+       DATA TABLE
+    ====================================================== */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .table-header {
+      padding: 1.2rem 1.4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table-header h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+    }
+
+    .tbl {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .tbl th {
+      text-align: left;
+      padding: .75rem 1.4rem;
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--paper);
+    }
+
+    .tbl td {
+      padding: .75rem 1.4rem;
+      font-size: .85rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tbl tr:last-child td {
+      border-bottom: none;
+    }
+
+    .tbl tr:hover td {
+      background: rgba(255, 140, 0, .03);
+    }
+
+    .pill {
+      display: inline-block;
+      padding: .2rem .6rem;
+      border-radius: 100px;
+      font-size: .7rem;
+      font-weight: 600;
+    }
+
+    .pill.green {
+      background: rgba(4, 106, 56, .1);
+      color: var(--green);
+    }
+
+    .pill.red {
+      background: rgba(200, 16, 46, .1);
+      color: var(--red);
+    }
+
+    .pill.orange {
+      background: rgba(255, 140, 0, .12);
+      color: var(--saffron);
+    }
+
+    .pill.blue {
+      background: rgba(0, 48, 135, .1);
+      color: var(--blue);
+    }
+
+    .pill.gray {
+      background: rgba(107, 107, 122, .1);
+      color: var(--muted);
+    }
+
+    /* ======================================================
+       INSIGHTS
+    ====================================================== */
+    .insight-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .insight-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem 1.4rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      transition: box-shadow .2s;
+    }
+
+    .insight-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .insight-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .insight-icon.high {
+      background: rgba(200, 16, 46, .1);
+    }
+
+    .insight-icon.medium {
+      background: rgba(255, 140, 0, .1);
+    }
+
+    .insight-icon.low {
+      background: rgba(4, 106, 56, .1);
+    }
+
+    .insight-icon.critical {
+      background: rgba(61, 90, 153, .1);
+    }
+
+    .insight-body {
+      flex: 1;
+    }
+
+    .insight-category {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      margin-bottom: .3rem;
+    }
+
+    .insight-message {
+      font-size: .88rem;
+      line-height: 1.6;
+    }
+
+    .insight-severity-badge {
+      flex-shrink: 0;
+    }
+
+    /* ======================================================
+       BIOMETRIC QUALITY BARS
+    ====================================================== */
+    .quality-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .quality-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.4rem;
+    }
+
+    .quality-label {
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      margin-bottom: .8rem;
+    }
+
+    .quality-score {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: .6rem;
+    }
+
+    .quality-bar-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+
+    .quality-bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      transition: width 1s ease;
+    }
+
+    /* ======================================================
+       ANOMALY TABLE BADGES
+    ====================================================== */
+    .severity-critical {
+      color: #6d28d9;
+      background: rgba(109, 40, 217, .1);
+    }
+
+    .severity-high {
+      color: var(--red);
+      background: rgba(200, 16, 46, .1);
+    }
+
+    .severity-medium {
+      color: var(--saffron);
+      background: rgba(255, 140, 0, .12);
+    }
+
+    .severity-low {
+      color: var(--green);
+      background: rgba(4, 106, 56, .1);
+    }
+
+    /* ======================================================
+       LOADING SHIMMER
+    ====================================================== */
+    .shimmer {
+      background: linear-gradient(90deg, var(--border) 25%, rgba(13, 13, 26, .04) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px;
+    }
+
+    @keyframes shimmer {
+      to {
+        background-position: -200% 0;
+      }
+    }
+
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .section-title .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--saffron);
+    }
+
+    /* ======================================================
+       FLOWCHART (Methodology Framework)
+    ====================================================== */
+    .flow-diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .flow-nodes {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .flow-node {
+      padding: .6rem 2rem;
+      border-radius: 8px;
+      font-size: .82rem;
+      font-weight: 500;
+      min-width: 220px;
+    }
+
+    .flow-node.start {
+      background: #c8f7c5;
+      color: #1a6a17;
+      border-radius: 100px;
+    }
+
+    .flow-node.collect {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .flow-node.preproc {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .flow-node.store {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+
+    .flow-node.analyse {
+      background: #ede9fe;
+      color: #5b21b6;
+    }
+
+    .flow-node.split {
+      background: var(--ink);
+      color: #fff;
+      border-radius: 100px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+    }
+
+    .flow-branch {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin: .4rem 0;
+    }
+
+    .flow-branch .flow-node {
+      min-width: 150px;
+    }
+
+    .flow-node.live {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .flow-node.hist {
+      background: #fce7f3;
+      color: #831843;
+    }
+
+    .flow-node.pred {
+      background: #fff7ed;
+      color: #9a3412;
+    }
+
+    .flow-node.viz {
+      background: #c8f7c5;
+      color: #1a6a17;
+    }
+
+    .flow-node.insight {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .flow-node.improve {
+      background: var(--ink);
+      color: var(--saffron);
+      font-weight: 700;
+    }
+
+    .flow-node.user {
+      background: #ede9fe;
+      color: #5b21b6;
+    }
+
+    .flow-node.end {
+      background: #c8f7c5;
+      color: #1a6a17;
+      border-radius: 100px;
+    }
+
+    .flow-arrow {
+      font-size: 1.2rem;
+      color: var(--muted);
+    }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform .3s;
+      }
+
+      .main {
+        margin-left: 0;
+      }
+
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ============================================================
+     SIDEBAR
+============================================================ -->
+  <nav class="sidebar">
+    <div class="sidebar-grid"></div>
+
+    <div class="sidebar-logo">
+      <div class="logo-pill">
+        <div class="logo-icon">UID</div>
+        <div class="logo-text">
+          <div class="t1">Aadhaar Portal</div>
+          <div class="t2">Analytics Dashboard</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">Main Menu</div>
+
+    <div class="nav-item active" onclick="showPage('live')" id="nav-live">
+      <span class="icon">📊</span> Live Statistics
+    </div>
+    <div class="nav-item" onclick="showPage('history')" id="nav-history">
+      <span class="icon">📈</span> Past History
+    </div>
+    <div class="nav-item" onclick="showPage('insights')" id="nav-insights">
+      <span class="icon">💡</span> Insights &amp; Improvement
+    </div>
+    <div class="nav-item" onclick="showPage('anomalies')" id="nav-anomalies">
+      <span class="icon">⚠️</span> Anomalies
+      <span class="badge" id="anomalyBadge">—</span>
+    </div>
+    <div class="nav-item" onclick="showPage('methodology')" id="nav-methodology">
+      <span class="icon">🔬</span> Methodology
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-info">
+          <div class="name" id="userName">Admin</div>
+          <div class="role" id="userRole">SuperAdmin</div>
+        </div>
+        <button class="btn-logout" onclick="logout()" title="Sign out">⏻</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============================================================
+     MAIN CONTENT
+============================================================ -->
+  <main class="main">
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">Live Statistics</h1>
+        <div class="crumb" id="pageCrumb">Real-time enrolment &amp; update metrics</div>
+      </div>
+      <div class="filter-row">
+        <select id="regionFilter">
+          <option value="">All Regions</option>
+        </select>
+        <input type="date" id="startDate" />
+        <input type="date" id="endDate" />
+        <button class="btn-apply" onclick="applyFilters()">Apply</button>
+        <button class="btn-export" onclick="exportCSV()">⬇ Export</button>
+      </div>
+    </div>
+
+    <!-- ============ PAGE: LIVE STATS ============ -->
+    <section class="page active" id="page-live">
+      <div class="kpi-grid" id="kpiGrid">
+        <!-- Populated by JS -->
+        <div class="kpi-card orange shimmer" style="height:110px"></div>
+        <div class="kpi-card red    shimmer" style="height:110px"></div>
+        <div class="kpi-card green  shimmer" style="height:110px"></div>
+        <div class="kpi-card blue   shimmer" style="height:110px"></div>
+        <div class="kpi-card indigo shimmer" style="height:110px"></div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Gender Distribution</div>
+              <div class="chart-sub">Last 30 days</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="genderChart"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Age Group Distribution</div>
+              <div class="chart-sub">Last 30 days</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="ageChart"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Enrollment Status Breakdown</div>
+              <div class="chart-sub">All time</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="statusChart"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Update Request Types</div>
+              <div class="chart-sub">Last 30 days</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="updateChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PAGE: HISTORY ============ -->
+    <section class="page" id="page-history">
+      <div class="charts-grid">
+        <div class="chart-card wide">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Monthly Enrollment &amp; Update Trend</div>
+              <div class="chart-sub" id="histYear">Year 2024</div>
+            </div>
+            <select id="yearSelect" onchange="loadMonthlyTrend()"
+              style="border:1.5px solid var(--border);background:var(--paper);border-radius:8px;padding:.35rem .7rem;font-size:.8rem;cursor:pointer;outline:none;">
+              <option>2024</option>
+              <option>2023</option>
+              <option>2022</option>
+            </select>
+          </div>
+          <div class="chart-wrap tall"><canvas id="monthlyChart"></canvas></div>
+        </div>
+
+        <div class="chart-card wide">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Year-over-Year Enrollment Growth</div>
+              <div class="chart-sub">Total enrollments per year</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="yoyChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3>Regional Comparison</h3>
+          <span class="pill orange" id="rangeLabel">—</span>
+        </div>
+        <table class="tbl" id="regionalTable">
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>District</th>
+              <th>Enrollments</th>
+              <th>Updates</th>
+              <th>Trend</th>
+            </tr>
+          </thead>
+          <tbody id="regionalTbody">
+            <tr>
+              <td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Loading…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ PAGE: INSIGHTS ============ -->
+    <section class="page" id="page-insights">
+      <div class="section-title"><span class="dot"></span> AI-Powered Recommendations</div>
+      <div class="insight-cards" id="insightList">
+        <div class="kpi-card shimmer" style="height:80px"></div>
+        <div class="kpi-card shimmer" style="height:80px"></div>
+      </div>
+
+      <div class="section-title"><span class="dot"></span> Biometric Quality Scores</div>
+      <div class="quality-grid" id="qualityGrid">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card wide">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Update Requests by Type &amp; Status</div>
+              <div class="chart-sub">Breakdown for selected date range</div>
+            </div>
+          </div>
+          <div class="chart-wrap tall"><canvas id="updateHistoryChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PAGE: ANOMALIES ============ -->
+    <section class="page" id="page-anomalies">
+      <div class="kpi-grid">
+        <div class="kpi-card red">
+          <div class="kpi-label">Unresolved Critical</div>
+          <div class="kpi-value" id="critCount">—</div>
+          <span class="kpi-icon">🚨</span>
+        </div>
+        <div class="kpi-card orange">
+          <div class="kpi-label">Unresolved High</div>
+          <div class="kpi-value" id="highCount">—</div>
+          <span class="kpi-icon">⚠️</span>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-label">Total Unresolved</div>
+          <div class="kpi-value" id="totalAnomaly">—</div>
+          <span class="kpi-icon">🔍</span>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3>Anomaly Log</h3>
+          <div style="display:flex;gap:.5rem">
+            <select id="severityFilter" onchange="loadAnomalies()">
+              <option value="">All Severities</option>
+              <option>Critical</option>
+              <option>High</option>
+              <option>Medium</option>
+              <option>Low</option>
+            </select>
+          </div>
+        </div>
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Type</th>
+              <th>Severity</th>
+              <th>Region</th>
+              <th>Detected On</th>
+              <th>Description</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="anomalyTbody">
+            <tr>
+              <td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">Loading…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ PAGE: METHODOLOGY ============ -->
+    <section class="page" id="page-methodology">
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Project Overview</div>
+              <div class="chart-sub">Submitted by Shreyas, Shraddha, Abid, Zail</div>
+            </div>
+          </div>
+          <p style="font-size:.88rem;line-height:1.8;color:var(--muted)">
+            This portal analyses Aadhaar enrolment, demographic, and biometric datasets to uncover societal trends and
+            anomalies. It integrates live statistics, historical trend analysis, and an AI-powered recommendation
+            framework — supporting data-driven decisions for policymakers and UIDAI administrators.
+          </p>
+          <br />
+          <div style="display:flex;flex-wrap:wrap;gap:.5rem">
+            <span class="pill orange">FastAPI Backend</span>
+            <span class="pill blue">MySQL Database</span>
+            <span class="pill green">Chart.js Visualisations</span>
+            <span class="pill gray">JWT Auth</span>
+            <span class="pill orange">PDF/CSV Export</span>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">System Modules</div>
+              <div class="chart-sub">Architecture layers</div>
+            </div>
+          </div>
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Module</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="pill orange">Auth</span></td>
+                <td>JWT-based admin login</td>
+              </tr>
+              <tr>
+                <td><span class="pill blue">Live Stats</span></td>
+                <td>Real-time KPI metrics</td>
+              </tr>
+              <tr>
+                <td><span class="pill green">History</span></td>
+                <td>Monthly/yearly trend analysis</td>
+              </tr>
+              <tr>
+                <td><span class="pill gray">Insights</span></td>
+                <td>Rule-based recommendations</td>
+              </tr>
+              <tr>
+                <td><span class="pill red">Anomalies</span></td>
+                <td>Irregularity detection engine</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="flow-diagram">
+        <div class="section-title" style="justify-content:center"><span class="dot"></span> Methodological Framework
+        </div>
+        <div class="flow-nodes">
+          <div class="flow-node start">▶ Start</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node collect">📥 Data Collection (Enrolment · Demographic · Biometric)</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node preproc">🔧 Data Preprocessing (Cleaning · Validation · Normalisation)</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node store">🗄 Data Storage (Centralised MySQL Database)</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node analyse">🔬 Data Analysis (Pattern Detection · Trend Analysis · Anomaly Identification)
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node split">⬡ Decision Split</div>
+          <div class="flow-branch">
+            <div class="flow-node live">📊 Live Statistics</div>
+            <div class="flow-node hist">📈 Past History Analysis</div>
+            <div class="flow-node pred">🔮 Predictive Indicators</div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node viz">📉 Visualisation &amp; Dashboard (Charts · Graphs · Reports)</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node insight">💡 Insight Generation (Key Findings &amp; Observations)</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node improve">🚀 Improvement &amp; Recommendation Framework</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node user">🖥 User Interaction (View · Filter · Export Reports)</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node end">⏹ End</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+  <script>
+    const API = 'http://localhost:8000/api';
+    const token = () => sessionStorage.getItem('token') || '';
+    const hdrs = () => ({ 'Authorization': 'Bearer ' + token(), 'Content-Type': 'application/json' });
+
+    /* ---------- Helpers ---------- */
+    const fmt = n => Number(n).toLocaleString('en-IN');
+
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = 'login.html';
+    }
+
+    // Restore user info from session
+    (() => {
+      const name = sessionStorage.getItem('fullName') || 'Admin';
+      const role = sessionStorage.getItem('role') || 'Analyst';
+      document.getElementById('userName').textContent = name;
+      document.getElementById('userRole').textContent = role;
+      document.getElementById('userAvatar').textContent = name[0].toUpperCase();
+    })();
+
+    /* ---------- Page navigation ---------- */
+    const pageMeta = {
+      live: { title: 'Live Statistics', crumb: 'Real-time enrolment & update metrics' },
+      history: { title: 'Past History', crumb: 'Historical trend analysis & comparisons' },
+      insights: { title: 'Insights & Improvement', crumb: 'Recommendations and biometric quality' },
+      anomalies: { title: 'Anomalies', crumb: 'Detected irregularities in enrolment data' },
+      methodology: { title: 'Methodology', crumb: 'Framework, architecture & project overview' },
+    };
+
+    let activeCharts = {};
+
+    function destroyChart(id) {
+      if (activeCharts[id]) { activeCharts[id].destroy(); delete activeCharts[id]; }
+    }
+
+    function showPage(id) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('page-' + id).classList.add('active');
+      document.getElementById('nav-' + id).classList.add('active');
+      document.getElementById('pageTitle').textContent = pageMeta[id].title;
+      document.getElementById('pageCrumb').textContent = pageMeta[id].crumb;
+
+      if (id === 'live') loadLiveStats();
+      if (id === 'history') loadHistory();
+      if (id === 'insights') loadInsights();
+      if (id === 'anomalies') loadAnomalies();
+    }
+
+    /* ---------- Filters ---------- */
+    // Init date range
+    (() => {
+      const today = new Date();
+      const y = today.getFullYear();
+      document.getElementById('endDate').value = today.toISOString().slice(0, 10);
+      document.getElementById('startDate').value = `${y}-01-01`;
+    })();
+
+    function applyFilters() { showPage(document.querySelector('.nav-item.active').id.replace('nav-', '')); }
+
+    function regionParam() {
+      const v = document.getElementById('regionFilter').value;
+      return v ? `&region_code=${v}` : '';
+    }
+
+    /* ---------- Load regions into filter ---------- */
+    async function loadRegions() {
+      try {
+        const res = await fetch(`${API}/live/regions`, { headers: hdrs() });
+        const data = await res.json();
+        const sel = document.getElementById('regionFilter');
+        data.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r.region_code;
+          opt.textContent = `${r.district_name}, ${r.state_name}`;
+          sel.appendChild(opt);
+        });
+      } catch { }
+    }
+
+    /* ---------- LIVE STATS ---------- */
+    async function loadLiveStats() {
+      try {
+        const [summary, gender, age, status, upd] = await Promise.all([
+          fetch(`${API}/live/summary?_${regionParam()}`, { headers: hdrs() }).then(r => r.json()),
+          fetch(`${API}/live/gender-split?_${regionParam()}`, { headers: hdrs() }).then(r => r.json()),
+          fetch(`${API}/live/age-split?_${regionParam()}`, { headers: hdrs() }).then(r => r.json()),
+          fetch(`${API}/live/status-breakdown`, { headers: hdrs() }).then(r => r.json()),
+          fetch(`${API}/live/update-types`, { headers: hdrs() }).then(r => r.json()),
+        ]);
+        renderKPIs(summary);
+        renderGenderChart(gender);
+        renderAgeChart(age);
+        renderStatusChart(status);
+        renderUpdateTypeChart(upd);
+      } catch (e) {
+        renderDemoData(); // fallback when backend is not running
+      }
+    }
+
+    function renderKPIs(s) {
+      document.getElementById('kpiGrid').innerHTML = `
+      <div class="kpi-card orange">
+        <div class="kpi-label">Enrollments Today</div>
+        <div class="kpi-value">${fmt(s.enrollments)}</div>
+        <span class="kpi-icon">📋</span>
+        <div class="kpi-delta up">↑ Real-time</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Updates Today</div>
+        <div class="kpi-value">${fmt(s.updates)}</div>
+        <span class="kpi-icon">✏️</span>
+        <div class="kpi-delta up">↑ Real-time</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Aadhaar Generated</div>
+        <div class="kpi-value">${fmt(s.generated)}</div>
+        <span class="kpi-icon">🪪</span>
+        <div class="kpi-delta up">↑ Today</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">Pending</div>
+        <div class="kpi-value">${fmt(s.pending)}</div>
+        <span class="kpi-icon">⏳</span>
+        <div class="kpi-delta">Awaiting verification</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Rejected</div>
+        <div class="kpi-value">${fmt(s.rejected)}</div>
+        <span class="kpi-icon">❌</span>
+        <div class="kpi-delta down">Needs review</div>
+      </div>`;
+    }
+
+    /* ---- Chart helpers ---- */
+    const PALETTE = ['#ff8c00', '#c8102e', '#046a38', '#003087', '#3d5a99', '#f59e0b', '#10b981', '#6366f1'];
+
+    function renderGenderChart(data) {
+      destroyChart('gender');
+      const ctx = document.getElementById('genderChart').getContext('2d');
+      activeCharts['gender'] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: data.map(d => d.gender),
+          datasets: [{ data: data.map(d => d.count), backgroundColor: PALETTE, borderWidth: 0, hoverOffset: 6 }]
+        },
+        options: { plugins: { legend: { position: 'bottom', labels: { font: { family: 'DM Sans' } } } }, cutout: '65%', responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function renderAgeChart(data) {
+      destroyChart('age');
+      const ctx = document.getElementById('ageChart').getContext('2d');
+      activeCharts['age'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.map(d => d.age_group),
+          datasets: [{ label: 'Enrollments', data: data.map(d => d.count), backgroundColor: '#ff8c00', borderRadius: 6 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
+
+    function renderStatusChart(data) {
+      destroyChart('status');
+      const ctx = document.getElementById('statusChart').getContext('2d');
+      const clrs = { Pending: '#ff8c00', Verified: '#046a38', Rejected: '#c8102e', Generated: '#003087' };
+      activeCharts['status'] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: data.map(d => d.status),
+          datasets: [{ data: data.map(d => d.count), backgroundColor: data.map(d => clrs[d.status] || '#999'), borderWidth: 0 }]
+        },
+        options: { plugins: { legend: { position: 'bottom', labels: { font: { family: 'DM Sans' } } } }, cutout: '60%', responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function renderUpdateTypeChart(data) {
+      destroyChart('updateType');
+      const ctx = document.getElementById('updateChart').getContext('2d');
+      activeCharts['updateType'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.map(d => d.type),
+          datasets: [{ label: 'Requests', data: data.map(d => d.count), backgroundColor: '#003087', borderRadius: 6 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
+
+    /* ---------- HISTORY ---------- */
+    async function loadHistory() {
+      await Promise.all([loadMonthlyTrend(), loadRegionalComparison(), loadYoY()]);
+    }
+
+    async function loadMonthlyTrend() {
+      const year = document.getElementById('yearSelect').value;
+      document.getElementById('histYear').textContent = `Year ${year}`;
+      try {
+        const data = await fetch(`${API}/history/monthly-trend?year=${year}${regionParam()}`, { headers: hdrs() }).then(r => r.json());
+        renderMonthlyChart(data);
+      } catch { renderDemoMonthly(); }
+    }
+
+    function renderMonthlyChart(data) {
+      destroyChart('monthly');
+      const ctx = document.getElementById('monthlyChart').getContext('2d');
+      const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const arr = (field) => labels.map((_, i) => {
+        const row = data.find(d => d.month === i + 1);
+        return row ? row[field] : 0;
+      });
+      activeCharts['monthly'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Enrollments', data: arr('enrollments'), backgroundColor: '#ff8c00', borderRadius: 5, stack: 'a' },
+            { label: 'Updates', data: arr('updates'), backgroundColor: '#003087', borderRadius: 5, stack: 'b' },
+            { label: 'Generated', data: arr('generated'), type: 'line', borderColor: '#046a38', backgroundColor: 'transparent', pointBackgroundColor: '#046a38', tension: .4 },
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index' }, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
+
+    async function loadYoY() {
+      try {
+        const data = await fetch(`${API}/history/yearly-growth`, { headers: hdrs() }).then(r => r.json());
+        renderYoYChart(data);
+      } catch { renderDemoYoY(); }
+    }
+
+    function renderYoYChart(data) {
+      destroyChart('yoy');
+      const ctx = document.getElementById('yoyChart').getContext('2d');
+      activeCharts['yoy'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map(d => d.year),
+          datasets: [
+            { label: 'Enrollments', data: data.map(d => d.enrollments), borderColor: '#ff8c00', backgroundColor: 'rgba(255,140,0,.1)', fill: true, tension: .4 },
+            { label: 'Generated', data: data.map(d => d.generated), borderColor: '#046a38', backgroundColor: 'rgba(4,106,56,.08)', fill: true, tension: .4 },
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
+
+    async function loadRegionalComparison() {
+      const start = document.getElementById('startDate').value;
+      const end = document.getElementById('endDate').value;
+      document.getElementById('rangeLabel').textContent = `${start} → ${end}`;
+      try {
+        const data = await fetch(`${API}/history/regional-comparison?start_date=${start}&end_date=${end}`, { headers: hdrs() }).then(r => r.json());
+        renderRegionalTable(data);
+      } catch { renderDemoRegional(); }
+    }
+
+    function renderRegionalTable(data) {
+      const tbody = document.getElementById('regionalTbody');
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">No data for this range.</td></tr>'; return; }
+      tbody.innerHTML = data.map((r, i) => `
+      <tr>
+        <td>${r.state}</td>
+        <td>${r.district}</td>
+        <td><strong>${fmt(r.enrollments)}</strong></td>
+        <td>${fmt(r.updates)}</td>
+        <td><span class="pill ${i < 3 ? 'green' : i < 7 ? 'orange' : 'gray'}">${i < 3 ? '↑ High' : i < 7 ? '→ Mid' : '↓ Low'}</span></td>
+      </tr>`).join('');
+    }
+
+    /* ---------- INSIGHTS ---------- */
+    async function loadInsights() {
+      try {
+        const [ins, bio] = await Promise.all([
+          fetch(`${API}/insights/recommendations`, { headers: hdrs() }).then(r => r.json()),
+          fetch(`${API}/insights/biometric-quality`, { headers: hdrs() }).then(r => r.json()),
+        ]);
+        renderInsights(ins.insights);
+        renderQuality(bio);
+        await loadUpdateHistoryChart();
+      } catch { renderDemoInsights(); }
+    }
+
+    function renderInsights(list) {
+      const icons = { High: '🔴', Medium: '🟠', Low: '🟢', Critical: '🟣' };
+      document.getElementById('insightList').innerHTML = list.map(i => `
+      <div class="insight-card">
+        <div class="insight-icon ${i.severity.toLowerCase()}">${icons[i.severity] || '💡'}</div>
+        <div class="insight-body">
+          <div class="insight-category">${i.category}</div>
+          <div class="insight-message">${i.message}</div>
+        </div>
+        <div class="insight-severity-badge">
+          <span class="pill ${i.severity === 'High' || i.severity === 'Critical' ? 'red' : i.severity === 'Medium' ? 'orange' : 'green'}">${i.severity}</span>
+        </div>
+      </div>`).join('');
+    }
+
+    function renderQuality(bio) {
+      const scores = [
+        { label: 'Fingerprint Quality', val: bio.avg_fingerprint, color: '#ff8c00' },
+        { label: 'Iris Quality', val: bio.avg_iris, color: '#003087' },
+        { label: 'Photo Quality', val: bio.avg_photo, color: '#046a38' },
+      ];
+      document.getElementById('qualityGrid').innerHTML = scores.map(s => `
+      <div class="quality-card">
+        <div class="quality-label">${s.label}</div>
+        <div class="quality-score" style="color:${s.color}">${s.val}%</div>
+        <div class="quality-bar-track">
+          <div class="quality-bar-fill" style="width:${s.val}%;background:${s.color}"></div>
+        </div>
+      </div>`).join('');
+    }
+
+    async function loadUpdateHistoryChart() {
+      const start = document.getElementById('startDate').value;
+      const end = document.getElementById('endDate').value;
+      try {
+        const data = await fetch(`${API}/history/update-history?start_date=${start}&end_date=${end}`, { headers: hdrs() }).then(r => r.json());
+        const types = [...new Set(data.map(d => d.type))];
+        const statuses = [...new Set(data.map(d => d.status))];
+        destroyChart('updateHistory');
+        const ctx = document.getElementById('updateHistoryChart').getContext('2d');
+        const colors = { Pending: '#ff8c00', Approved: '#046a38', Rejected: '#c8102e' };
+        activeCharts['updateHistory'] = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: types,
+            datasets: statuses.map((s, i) => ({
+              label: s,
+              data: types.map(t => { const row = data.find(d => d.type === t && d.status === s); return row ? row.count : 0; }),
+              backgroundColor: colors[s] || PALETTE[i],
+              borderRadius: 5,
+              stack: 'a',
+            }))
+          },
+          options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index' }, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+        });
+      } catch { }
+    }
+
+    /* ---------- ANOMALIES ---------- */
+    async function loadAnomalies() {
+      const sev = document.getElementById('severityFilter').value;
+      try {
+        const data = await fetch(`${API}/anomalies/list?resolved=false${sev ? '&severity=' + sev : ''}`, { headers: hdrs() }).then(r => r.json());
+        renderAnomalyTable(data);
+        document.getElementById('anomalyBadge').textContent = data.length;
+        document.getElementById('totalAnomaly').textContent = data.length;
+        document.getElementById('critCount').textContent = data.filter(d => d.severity === 'Critical').length;
+        document.getElementById('highCount').textContent = data.filter(d => d.severity === 'High').length;
+      } catch { renderDemoAnomalies(); }
+    }
+
+    function renderAnomalyTable(data) {
+      const tbody = document.getElementById('anomalyTbody');
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">No anomalies found.</td></tr>'; return; }
+      tbody.innerHTML = data.map(a => `
+      <tr>
+        <td>#${a.anomaly_id}</td>
+        <td>${a.anomaly_type}</td>
+        <td><span class="pill severity-${a.severity.toLowerCase()}">${a.severity}</span></td>
+        <td>${a.region_code || '—'}</td>
+        <td>${a.detected_on}</td>
+        <td style="max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.description || '—'}</td>
+        <td><span class="pill ${a.resolved ? 'green' : 'red'}">${a.resolved ? 'Resolved' : 'Open'}</span></td>
+      </tr>`).join('');
+    }
+
+    /* ---------- CSV EXPORT ---------- */
+    function exportCSV() {
+      const tables = document.querySelectorAll('.tbl');
+      if (!tables.length) return;
+      const tbl = tables[0];
+      const rows = [...tbl.querySelectorAll('tr')].map(tr =>
+        [...tr.querySelectorAll('th,td')].map(td => `"${td.textContent.trim()}"`).join(',')
+      );
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `aadhaar-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+    }
+
+    /* ==========================================================
+       DEMO DATA FALLBACKS (when backend not running)
+    ========================================================== */
+    function renderDemoData() {
+      renderKPIs({ enrollments: 12847, updates: 4231, generated: 11023, pending: 1824, rejected: 312 });
+      renderGenderChart([{ gender: 'Male', count: 52310 }, { gender: 'Female', count: 48760 }, { gender: 'Other', count: 930 }]);
+      renderAgeChart([{ age_group: '0-18', count: 18200 }, { age_group: '19-35', count: 42100 }, { age_group: '36-60', count: 31500 }, { age_group: '60+', count: 9200 }]);
+      renderStatusChart([{ status: 'Generated', count: 98200 }, { status: 'Verified', count: 12300 }, { status: 'Pending', count: 5400 }, { status: 'Rejected', count: 2100 }]);
+      renderUpdateTypeChart([
+        { type: 'Address', count: 4200 }, { type: 'Mobile', count: 3100 }, { type: 'Name', count: 1800 },
+        { type: 'Photo', count: 1200 }, { type: 'Biometric', count: 900 }, { type: 'Email', count: 600 }, { type: 'DOB', count: 300 }
+      ]);
+    }
+
+    function renderDemoMonthly() {
+      renderMonthlyChart([
+        { month: 1, enrollments: 8200, updates: 2800, generated: 7500 }, { month: 2, enrollments: 7900, updates: 2600, generated: 7200 },
+        { month: 3, enrollments: 9100, updates: 3100, generated: 8400 }, { month: 4, enrollments: 10200, updates: 3400, generated: 9500 },
+        { month: 5, enrollments: 11000, updates: 3700, generated: 10100 }, { month: 6, enrollments: 12400, updates: 4100, generated: 11400 },
+        { month: 7, enrollments: 11800, updates: 3900, generated: 10900 }, { month: 8, enrollments: 13200, updates: 4400, generated: 12100 },
+        { month: 9, enrollments: 12700, updates: 4200, generated: 11700 }, { month: 10, enrollments: 14100, updates: 4700, generated: 12900 },
+        { month: 11, enrollments: 13500, updates: 4500, generated: 12400 }, { month: 12, enrollments: 15000, updates: 5000, generated: 13800 },
+      ]);
+    }
+
+    function renderDemoYoY() {
+      renderYoYChart([
+        { year: 2019, enrollments: 820000, generated: 780000 }, { year: 2020, enrollments: 950000, generated: 910000 },
+        { year: 2021, enrollments: 1100000, generated: 1060000 }, { year: 2022, enrollments: 1280000, generated: 1230000 },
+        { year: 2023, enrollments: 1400000, generated: 1350000 }, { year: 2024, enrollments: 1420000, generated: 1380000 },
+      ]);
+    }
+
+    function renderDemoRegional() {
+      renderRegionalTable([
+        { state: 'Maharashtra', district: 'Mumbai', enrollments: 284000, updates: 95000 },
+        { state: 'Karnataka', district: 'Bengaluru', enrollments: 241000, updates: 82000 },
+        { state: 'Tamil Nadu', district: 'Chennai', enrollments: 218000, updates: 74000 },
+        { state: 'Maharashtra', district: 'Pune', enrollments: 196000, updates: 68000 },
+        { state: 'Uttar Pradesh', district: 'Lucknow', enrollments: 178000, updates: 61000 },
+        { state: 'Delhi', district: 'New Delhi', enrollments: 165000, updates: 57000 },
+        { state: 'Tamil Nadu', district: 'Coimbatore', enrollments: 142000, updates: 49000 },
+        { state: 'Karnataka', district: 'Mysuru', enrollments: 128000, updates: 44000 },
+        { state: 'Maharashtra', district: 'Nashik', enrollments: 114000, updates: 39000 },
+        { state: 'Uttar Pradesh', district: 'Agra', enrollments: 98000, updates: 34000 },
+      ]);
+    }
+
+    function renderDemoInsights() {
+      renderInsights([
+        { category: 'Biometric Quality', severity: 'High', message: '142 records have fingerprint quality below 60%. Recommend calibrating biometric scanners and retraining operators.' },
+        { category: 'Rejection Rate', severity: 'High', message: 'Rejection rate in last 30 days is 12.4%. Review document validation rules and operator training.' },
+        { category: 'Coverage Gap', severity: 'Medium', message: 'No activity recorded in last 7 days for Agra (Uttar Pradesh). Consider deploying mobile enrollment camps.' },
+        { category: 'Processing Backlog', severity: 'Medium', message: '328 enrollments pending for >3 days. Increase verification staff or automate document checks.' },
+      ]);
+      renderQuality({ avg_fingerprint: 73.4, avg_iris: 81.2, avg_photo: 88.6 });
+    }
+
+    function renderDemoAnomalies() {
+      const demo = [
+        { anomaly_id: 1, anomaly_type: 'Surge', severity: 'Critical', region_code: 'MH-MUM', detected_on: '2024-11-14', description: 'Enrollment count 3× daily average — possible camp drive', resolved: false },
+        { anomaly_id: 2, anomaly_type: 'Quality', severity: 'High', region_code: 'UP-AGR', detected_on: '2024-11-12', description: 'Avg fingerprint quality dropped below 50 for 3 consecutive days', resolved: false },
+        { anomaly_id: 3, anomaly_type: 'Duplicate', severity: 'High', region_code: 'KA-BLR', detected_on: '2024-11-10', description: '18 potential duplicate demographic records detected', resolved: false },
+        { anomaly_id: 4, anomaly_type: 'Drop', severity: 'Medium', region_code: 'TN-CBE', detected_on: '2024-11-09', description: 'Enrollments dropped 80% vs 7-day average', resolved: false },
+        { anomaly_id: 5, anomaly_type: 'Mismatch', severity: 'Low', region_code: 'MH-PUN', detected_on: '2024-11-08', description: 'DOB mismatch between demographic and document scan in 6 records', resolved: true },
+      ];
+      renderAnomalyTable(demo);
+      document.getElementById('anomalyBadge').textContent = 4;
+      document.getElementById('totalAnomaly').textContent = 4;
+      document.getElementById('critCount').textContent = 1;
+      document.getElementById('highCount').textContent = 2;
+    }
+
+    /* ---------- INIT ---------- */
+    loadRegions();
+    loadLiveStats();
+    // Auto-refresh live stats every 60 seconds
+    setInterval(() => {
+      if (document.getElementById('page-live').classList.contains('active')) loadLiveStats();
+    }, 60000);
+  </script>
+</body>
+
+</html>

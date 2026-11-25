@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aadhaar Analytics Portal — Login</title>
+  <meta name="description" content="Secure admin login for the Aadhaar Analytics Portal — analyse enrolment, demographic and biometric data." />
+  <link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+  <div class="login-wrap">
+    <!-- ===== Left: Brand Panel ===== -->
+    <div class="brand-panel">
+      <div class="tricolor-strip"></div>
+      <div class="brand-grid"></div>
+      <div class="brand-content">
+        <div class="uidai-badge">
+          <div class="dot">UID</div>
+          <span>UIDAI — Government of India</span>
+        </div>
+        <h1 class="brand-title">
+          Aadhaar<br/>
+          <span class="accent">Analytics</span><br/>
+          Portal
+        </h1>
+        <p class="brand-sub">
+          A unified web-based platform for analysing Aadhaar enrolment, demographic, and biometric data — delivering live statistics, historical trends, and actionable insights.
+        </p>
+        <div class="brand-stats">
+          <div class="bs-item">
+            <div class="num">1.4B+</div>
+            <div class="lbl">Enrolled</div>
+          </div>
+          <div class="bs-item">
+            <div class="num">36</div>
+            <div class="lbl">States/UTs</div>
+          </div>
+          <div class="bs-item">
+            <div class="num">99%</div>
+            <div class="lbl">Adult coverage</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Right: Form Panel ===== -->
+    <div class="form-panel">
+      <div class="form-header">
+        <h2>Admin Sign In</h2>
+        <p>Enter your credentials to access the analytics portal</p>
+      </div>
+
+      <div id="errorMsg" class="error-msg">Invalid username or password.</div>
+
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="e.g. admin" autocomplete="username" />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+
+      <button class="btn-login" id="loginBtn" onclick="handleLogin()">
+        <span>Sign In to Portal →</span>
+        <div class="spinner"></div>
+      </button>
+
+      <p class="form-footer">
+        Default credentials: <strong>admin</strong> / <strong>Admin@1234</strong><br/>
+        Change these immediately in production.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:8000/api';
+
+    async function handleLogin() {
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value;
+      const err  = document.getElementById('errorMsg');
+      const btn  = document.getElementById('loginBtn');
+
+      err.classList.remove('show');
+
+      if (!user || !pass) {
+        err.textContent = 'Please enter username and password.';
+        err.classList.add('show');
+        return;
+      }
+
+      // Show loading spinner
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      try {
+        const body = new URLSearchParams({ username: user, password: pass });
+        const res  = await fetch(`${API}/auth/login`, { method: 'POST', body });
+        const text = await res.text();
+        let data;
+
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { detail: text };
+        }
+
+        if (!res.ok) throw new Error(data.detail || data.message || `Login failed (${res.status})`);
+
+        // Persist token and redirect
+        sessionStorage.setItem('token',    data.access_token);
+        sessionStorage.setItem('role',     data.role);
+        sessionStorage.setItem('fullName', data.full_name);
+        window.location.href = 'dashboard.html';
+      } catch (e) {
+        err.textContent = e.message;
+        err.classList.add('show');
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    }
+
+    // Allow Enter key to submit
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+  </script>
+</body>
+</html>
