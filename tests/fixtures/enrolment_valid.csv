@@ -1,0 +1,4 @@
+enrollment_date,gender,age,enrollment_status,region_code
+2026-01-01,Male,30,Verified,MH-MUM
+2026-01-02,F,10,Generated,KA-BLR
+2026-01-03,Female,70,Pending,DL-NDL

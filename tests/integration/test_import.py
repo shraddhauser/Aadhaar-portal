@@ -1,4 +1,5 @@
 from datetime import date
+from pathlib import Path
 
 import pytest
 
@@ -6,12 +7,8 @@ import backend.routes.data_import as data_import
 from backend.models.models import Enrollment
 
 URL = "/api/import/enrollments/upload"
-VALID_CSV = (
-    "enrollment_date,gender,age,enrollment_status,region_code\n"
-    "2026-01-01,Male,30,Verified,MH-MUM\n"
-    "2026-01-02,F,10,Generated,KA-BLR\n"
-    "2026-01-03,Female,70,Pending,DL-NDL\n"
-).encode()
+FIXTURES = Path(__file__).resolve().parent.parent / "fixtures"
+VALID_CSV = (FIXTURES / "enrolment_valid.csv").read_bytes()
 
 
 def _upload(client, headers, content, filename="data.csv", url=URL):
@@ -33,14 +30,14 @@ def test_upload_keeps_the_dates_from_the_csv(client, auth_headers, db_session):
 
 
 def test_missing_column_is_400_and_names_it(client, auth_headers, db_session):
-    resp = _upload(client, auth_headers, b"enrollment_date,age,region_code\n2026-01-01,30,MH-MUM\n")
+    resp = _upload(client, auth_headers, (FIXTURES / "enrolment_missing_gender.csv").read_bytes())
     assert resp.status_code == 400
     assert resp.json()["detail"]["missing_columns"] == ["gender"]
     assert db_session.query(Enrollment).count() == 0
 
 
 def test_biometric_missing_scores_are_listed(client, auth_headers):
-    resp = _upload(client, auth_headers, b"enrollment_date,iris_quality\n2026-01-01,80\n",
+    resp = _upload(client, auth_headers, (FIXTURES / "biometric_missing_scores.csv").read_bytes(),
                    url="/api/import/biometric/upload")
     assert resp.status_code == 400
     missing = resp.json()["detail"]["missing_columns"]
