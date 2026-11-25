@@ -50,8 +50,8 @@ project; see [CONTRIBUTORS.md](CONTRIBUTORS.md) for each member's work.
 ```mermaid
 flowchart LR
     B[Browser<br/>vanilla JS + Chart.js] -- "fetch + JWT" --> API[FastAPI routers<br/>auth · live · history · insights<br/>anomalies · export · import · chat]
-    API --> DB[(SQLite / MySQL)]
-    CSV[data/*.csv<br/>synthetic] --> ING[Ingestion pipeline<br/>clean · load · aggregate · detect] --> DB
+    API --> DB[("SQLite / MySQL")]
+    CSV["data/*.csv<br/>synthetic"] --> ING[Ingestion pipeline<br/>clean · load · aggregate · detect] --> DB
     API -- "upload" --> ING
     API -- "aggregates + question" --> LLM[Anthropic Claude]
 ```

@@ -7,20 +7,20 @@ part that calls an outside service.
 ```mermaid
 flowchart LR
     subgraph Browser
-        P[login.html / dashboard.html<br/>vanilla JS + Chart.js]
+        P["login.html / dashboard.html<br/>vanilla JS + Chart.js"]
     end
 
     subgraph FastAPI["FastAPI app (backend/main.py)"]
-        S[Static files<br/>/, /dashboard, /js, /css]
-        A[/api/auth<br/>JWT login/]
-        R[/api/live · /history · /insights<br/>/anomalies · /export/]
-        I[/api/import<br/>CSV upload, SuperAdmin only/]
-        C[/api/chat/ask/]
+        S["Static files<br/>/, /dashboard, /js, /css"]
+        A["/api/auth<br/>JWT login"]
+        R["/api/live · /history · /insights<br/>/anomalies · /export"]
+        I["/api/import<br/>CSV upload, SuperAdmin only"]
+        C["/api/chat/ask"]
         ING[DataIngestionPipeline<br/>clean · load · aggregate · detect]
     end
 
-    DB[(SQLite or MySQL<br/>SQLAlchemy models)]
-    CSV[data/*.csv<br/>synthetic]
+    DB[("SQLite or MySQL<br/>SQLAlchemy models")]
+    CSV["data/*.csv<br/>synthetic"]
     LLM[Anthropic Claude API]
 
     P -- "HTML/JS" --> S
