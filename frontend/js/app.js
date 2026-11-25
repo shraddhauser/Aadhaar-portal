@@ -8,7 +8,7 @@
 /* ──────────────────────────────────────────────────────────────
    1. CONFIG & AUTH
    ────────────────────────────────────────────────────────────── */
-const API   = 'http://localhost:8000/api';
+const API   = window.APP_CONFIG.API_BASE;  // set in js/config.js
 const token = () => sessionStorage.getItem('token') || '';
 const hdrs  = () => ({
   'Authorization': `Bearer ${token()}`,
