@@ -29,10 +29,16 @@ Things to know about the synthetic data:
 Any figure shown by the dashboard describes this synthetic data, not real
 Aadhaar activity.
 
-To regenerate:
+The public demo does not use these files: `scripts/demo_bootstrap.py`
+regenerates the same kind of data with a fixed seed (2026) and dates ending
+on the day it starts, so "last 30 days" views are not empty. Set
+`DEMO_FRESH_DATA=false` to load the committed CSVs instead.
+
+To regenerate (add `--seed N` for repeatable output, `--out DIR` to write
+somewhere other than `data/`):
 
 ```bash
-python scripts/generate_sample_data.py
+python scripts/generate_sample_data.py --days 730 --seed 2026
 python scripts/setup_complete.py
 ```
 

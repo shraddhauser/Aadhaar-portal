@@ -43,7 +43,12 @@ so nothing else is needed for a local run. `.env` is git-ignored: never commit i
 | `DB_FILE` | SQLite file path, relative to the repo root |
 | `DB_URL` | Full SQLAlchemy URL; overrides the other DB settings when set |
 | `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `DB_NAME` | MySQL connection (only when `DB_ENGINE=mysql`) |
-| `GEMINI_API_KEY` | AI chatbot (optional) |
+| `ENV` | `development` (default) or `production`; production refuses to start without `JWT_SECRET_KEY` |
+| `JWT_SECRET_KEY` | Token signing key. Empty in development = random key per run (logins reset on restart) |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Used by `scripts/create_admin.py` / `setup_complete.py`; prompted for if empty |
+| `MAX_UPLOAD_MB` | CSV upload limit (default 10) |
+| `ANTHROPIC_API_KEY` | AI chatbot (optional; without it the chatbot returns 503) |
+| `DEMO_MODE`, `DEMO_USERNAME`, `DEMO_PASSWORD` | Public demo only, see below |
 
 ## 3. Build the database
 
@@ -53,8 +58,16 @@ The database is not committed. Build it from the CSVs in `data/`:
 python scripts/setup_complete.py
 ```
 
-This creates the tables, seeds the 10 regions and an admin user, loads
-`data/*.csv`, aggregates daily statistics and runs anomaly detection. Check the
+This creates the tables, seeds the 10 regions, creates an admin user (from
+`ADMIN_USERNAME` / `ADMIN_PASSWORD`, or it asks), loads `data/*.csv`,
+aggregates daily statistics and runs anomaly detection.
+
+To add or reset an admin later:
+
+```bash
+python scripts/create_admin.py            # asks for username and password
+python scripts/create_admin.py --reset    # change an existing user's password
+``` Check the
 result with:
 
 ```bash
@@ -85,6 +98,25 @@ The login endpoint (`POST /api/auth/login`) takes **form data**
 ```bash
 curl -X POST http://localhost:8000/api/auth/login -d "username=admin&password=<password>"
 ```
+
+## Running the demo build locally
+
+This is what the Render service runs: synthetic data regenerated up to today,
+a read-only `Viewer` login, and uploads disabled.
+
+```bash
+DEMO_MODE=true DEMO_PASSWORD=<choose one> DB_FILE=demo.db python scripts/demo_bootstrap.py
+DEMO_MODE=true DB_FILE=demo.db python -m uvicorn backend.main:app --port 8000
+```
+
+## Deploying to Render
+
+1. In Render, choose **New → Blueprint** and select this repository; it reads
+   `render.yaml`.
+2. Set `DEMO_PASSWORD` (shown publicly in the README, so use a demo-only
+   value) and, optionally, `ANTHROPIC_API_KEY`.
+3. Deploy. The first start takes about 20–60 seconds while the database is
+   built. Free services sleep when idle and rebuild the database on wake.
 
 ## Using MySQL instead of SQLite
 
