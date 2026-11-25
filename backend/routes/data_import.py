@@ -101,13 +101,13 @@ async def upload_enrollment_data(
     try:
         pipeline = DataIngestionPipeline(db)
         count, errors = pipeline.ingest_enrollment_data(df)
-        
+
         # Aggregate daily stats after ingestion
         pipeline.aggregate_daily_stats()
-        
+
         # Detect anomalies
         anomaly_count = pipeline.detect_anomalies()
-        
+
         return {
             "status": "success",
             "records_ingested": count,
@@ -133,10 +133,10 @@ async def upload_demographic_data(
     try:
         pipeline = DataIngestionPipeline(db)
         count, errors = pipeline.ingest_demographic_data(df)
-        
+
         # Aggregate daily stats
         pipeline.aggregate_daily_stats()
-        
+
         return {
             "status": "success",
             "records_ingested": count,
@@ -161,7 +161,7 @@ async def upload_biometric_data(
     try:
         pipeline = DataIngestionPipeline(db)
         count, errors = pipeline.ingest_biometric_data(df)
-        
+
         return {
             "status": "success",
             "records_ingested": count,
@@ -204,13 +204,13 @@ def ingestion_status(
     """
     from backend.models.models import Enrollment, Update, BiometricData, DailyStat
     from sqlalchemy import func
-    
+
     try:
         enrollment_count = db.query(func.count(Enrollment.enrollment_id)).scalar() or 0
         update_count = db.query(func.count(Update.update_id)).scalar() or 0
         biometric_count = db.query(func.count(BiometricData.biometric_id)).scalar() or 0
         daily_stat_count = db.query(func.count(DailyStat.stat_id)).scalar() or 0
-        
+
         return {
             "enrollments": int(enrollment_count),
             "updates": int(update_count),

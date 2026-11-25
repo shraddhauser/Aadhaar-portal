@@ -189,5 +189,3 @@ def trends_forecast(
         "ml_forecast":     ml_forecast,
         "model": "3-month moving average + damped exponential smoothing (rule-based, no trained model)"
     }
-
-

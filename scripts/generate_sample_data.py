@@ -41,24 +41,24 @@ UPDATE_STATUSES = ['Pending', 'Approved', 'Rejected']
 def generate_enrollment_data(num_records=5000, days_back=365):
     """Generate realistic enrollment dataset."""
     print(f"Generating {num_records} enrollment records...")
-    
+
     data = []
     start_date = datetime.now() - timedelta(days=days_back)
-    
+
     for i in range(num_records):
         enrollment_date = start_date + timedelta(
             days=random.randint(0, days_back),
             hours=random.randint(0, 23),
             minutes=random.randint(0, 59)
         )
-        
+
         # Bias towards 'Generated' status (70% success rate)
         status = random.choices(
             ENROLLMENT_STATUSES,
             weights=[10, 50, 20, 20],
             k=1
         )[0]
-        
+
         data.append({
             'enrollment_date': enrollment_date.date(),
             'gender': random.choice(GENDERS),
@@ -68,7 +68,7 @@ def generate_enrollment_data(num_records=5000, days_back=365):
             'region_code': random.choice(REGIONS)[0],
             'district': random.choice(REGIONS)[2],
         })
-    
+
     df = pd.DataFrame(data)
     output_path = OUT_DIR / 'api_data_aadhar_enrolment.csv'
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -80,24 +80,24 @@ def generate_enrollment_data(num_records=5000, days_back=365):
 def generate_demographic_data(num_records=3000, days_back=365):
     """Generate realistic demographic/update dataset."""
     print(f"Generating {num_records} demographic/update records...")
-    
+
     data = []
     start_date = datetime.now() - timedelta(days=days_back)
-    
+
     for i in range(num_records):
         update_date = start_date + timedelta(
             days=random.randint(0, days_back),
             hours=random.randint(0, 23),
             minutes=random.randint(0, 59)
         )
-        
+
         # Bias towards 'Approved' status (60%)
         status = random.choices(
             UPDATE_STATUSES,
             weights=[20, 60, 20],
             k=1
         )[0]
-        
+
         data.append({
             'update_date': update_date.date(),
             'update_type': random.choice(UPDATE_TYPES),
@@ -105,7 +105,7 @@ def generate_demographic_data(num_records=3000, days_back=365):
             'region_code': random.choice(REGIONS)[0],
             'district': random.choice(REGIONS)[2],
         })
-    
+
     df = pd.DataFrame(data)
     output_path = OUT_DIR / 'api_data_aadhar_demographic.csv'
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -117,40 +117,40 @@ def generate_demographic_data(num_records=3000, days_back=365):
 def generate_biometric_data(num_records=4500, days_back=365):
     """Generate realistic biometric quality dataset."""
     print(f"Generating {num_records} biometric quality records...")
-    
+
     data = []
     start_date = datetime.now() - timedelta(days=days_back)
-    
+
     for i in range(num_records):
         enrollment_date = start_date + timedelta(
             days=random.randint(0, days_back),
             hours=random.randint(0, 23),
             minutes=random.randint(0, 59)
         )
-        
+
         # Quality scores: mostly 70-95, some outliers below 60
         if random.random() < 0.1:  # 10% poor quality
             fp_quality = random.randint(30, 60)
         else:
             fp_quality = random.randint(70, 98)
-        
+
         if random.random() < 0.12:
             iris_quality = random.randint(25, 60)
         else:
             iris_quality = random.randint(70, 98)
-        
+
         if random.random() < 0.08:
             photo_quality = random.randint(40, 65)
         else:
             photo_quality = random.randint(75, 99)
-        
+
         data.append({
             'enrollment_date': enrollment_date.date(),
             'fingerprint_quality': fp_quality,
             'iris_quality': iris_quality,
             'photo_quality': photo_quality,
         })
-    
+
     df = pd.DataFrame(data)
     output_path = OUT_DIR / 'api_data_aadhar_biometric.csv'
     output_path.parent.mkdir(parents=True, exist_ok=True)

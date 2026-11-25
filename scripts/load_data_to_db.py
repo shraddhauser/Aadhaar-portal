@@ -39,7 +39,7 @@ def seed_regions():
     """Seed default regions if not existing."""
     logger.info("Seeding regions...")
     db = SessionLocal()
-    
+
     regions_data = [
         ('Maharashtra', 'Mumbai', 'MH-MUM'),
         ('Maharashtra', 'Pune', 'MH-PUN'),
@@ -52,7 +52,7 @@ def seed_regions():
         ('Uttar Pradesh', 'Agra', 'UP-AGR'),
         ('Delhi', 'New Delhi', 'DL-NDL'),
     ]
-    
+
     for state, district, code in regions_data:
         existing = db.query(Region).filter(Region.region_code == code).first()
         if not existing:
@@ -62,7 +62,7 @@ def seed_regions():
                 region_code=code
             )
             db.add(region)
-    
+
     db.commit()
     db.close()
     logger.info("✓ Regions seeded")
@@ -71,16 +71,16 @@ def seed_regions():
 def load_data_from_csv(csv_dir: Path):
     """Load data from CSV files in specified directory."""
     logger.info(f"Loading data from {csv_dir}...")
-    
+
     db = SessionLocal()
     pipeline = DataIngestionPipeline(db)
-    
+
     results = {
         'enrollments': {'count': 0, 'errors': []},
         'demographics': {'count': 0, 'errors': []},
         'biometrics': {'count': 0, 'errors': []},
     }
-    
+
     # Load enrollment data
     enroll_file = csv_dir / 'api_data_aadhar_enrolment.csv'
     if enroll_file.exists():
@@ -92,7 +92,7 @@ def load_data_from_csv(csv_dir: Path):
         logger.info(f"✓ Loaded {count} enrollment records")
     else:
         logger.warning(f"✗ Enrollment file not found: {enroll_file}")
-    
+
     # Load demographic data
     demo_file = csv_dir / 'api_data_aadhar_demographic.csv'
     if demo_file.exists():
@@ -104,7 +104,7 @@ def load_data_from_csv(csv_dir: Path):
         logger.info(f"✓ Loaded {count} demographic records")
     else:
         logger.warning(f"✗ Demographic file not found: {demo_file}")
-    
+
     # Load biometric data
     biometric_file = csv_dir / 'api_data_aadhar_biometric.csv'
     if biometric_file.exists():
@@ -116,17 +116,17 @@ def load_data_from_csv(csv_dir: Path):
         logger.info(f"✓ Loaded {count} biometric records")
     else:
         logger.warning(f"✗ Biometric file not found: {biometric_file}")
-    
+
     # Aggregate daily stats
     logger.info("Aggregating daily statistics...")
     stat_count = pipeline.aggregate_daily_stats()
     logger.info(f"✓ Aggregated stats for {stat_count} days")
-    
+
     # Detect anomalies
     logger.info("Detecting anomalies...")
     anomaly_count = pipeline.detect_anomalies()
     logger.info(f"✓ Detected {anomaly_count} anomalies")
-    
+
     db.close()
     return results
 
@@ -136,25 +136,25 @@ def main():
     print("\n" + "="*70)
     print("AADHAAR PORTAL - DATABASE INITIALIZATION & DATA LOADING")
     print("="*70 + "\n")
-    
+
     # Step 1: Initialize database
     if not init_database():
         logger.error("Failed to initialize database")
         sys.exit(1)
-    
+
     # Step 2: Seed regions
     seed_regions()
-    
+
     # Step 3: Load data from CSV
     data_dir = Path(__file__).parent.parent / 'data'
-    
+
     if not data_dir.exists():
         logger.error(f"Data directory not found: {data_dir}")
         logger.info("Please run: python scripts/generate_sample_data.py")
         sys.exit(1)
-    
+
     results = load_data_from_csv(data_dir)
-    
+
     # Summary
     print("\n" + "="*70)
     print("DATA LOADING SUMMARY")
@@ -163,14 +163,14 @@ def main():
     print(f"Demographics loaded: {results['demographics']['count']:,}")
     print(f"Biometrics loaded:   {results['biometrics']['count']:,}")
     print(f"\nTotal records: {sum(r['count'] for r in results.values()):,}")
-    
+
     if results['enrollments']['errors']:
         print(f"\nEnrollment errors: {len(results['enrollments']['errors'])}")
     if results['demographics']['errors']:
         print(f"Demographic errors: {len(results['demographics']['errors'])}")
     if results['biometrics']['errors']:
         print(f"Biometric errors: {len(results['biometrics']['errors'])}")
-    
+
     print("\n✓ DATABASE INITIALIZATION COMPLETE")
     print("="*70 + "\n")
 

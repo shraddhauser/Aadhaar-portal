@@ -21,13 +21,13 @@ def verify_database():
             DailyStat, Anomaly, AdminUser
         )
         from sqlalchemy import func
-        
+
         db = SessionLocal()
-        
+
         print("\n" + "="*70)
         print("DATABASE VERIFICATION REPORT")
         print("="*70 + "\n")
-        
+
         # Regions
         region_count = db.query(func.count(Region.region_id)).scalar() or 0
         logger.info(f"🟢 Regions: {int(region_count)}")
@@ -37,7 +37,7 @@ def verify_database():
                 logger.info(f"   • {r.region_code}: {r.district_name}, {r.state_name}")
             if region_count > 5:
                 logger.info(f"   ... and {int(region_count)-5} more")
-        
+
         # Enrollments
         enroll_count = db.query(func.count(Enrollment.enrollment_id)).scalar() or 0
         logger.info(f"\n🟢 Enrollments: {int(enroll_count):,}")
@@ -50,7 +50,7 @@ def verify_database():
             for gender, count in gender_stats:
                 pct = (count / enroll_count) * 100
                 logger.info(f"   • {gender}: {int(count):,} ({pct:.1f}%)")
-            
+
             # Status breakdown
             logger.info("   Status breakdown:")
             status_stats = db.query(
@@ -59,12 +59,12 @@ def verify_database():
             ).group_by(Enrollment.enrollment_status).all()
             for status, count in status_stats:
                 logger.info(f"     - {status}: {int(count):,}")
-            
+
             # Date range
             first_date = db.query(func.min(Enrollment.enrollment_date)).scalar()
             last_date = db.query(func.max(Enrollment.enrollment_date)).scalar()
             logger.info(f"   Date range: {first_date} to {last_date}")
-        
+
         # Updates
         update_count = db.query(func.count(Update.update_id)).scalar() or 0
         logger.info(f"\n🟢 Updates: {int(update_count):,}")
@@ -77,7 +77,7 @@ def verify_database():
             logger.info("   Top update types:")
             for update_type, count in type_stats[:5]:
                 logger.info(f"   • {update_type}: {int(count):,}")
-        
+
         # Biometric Data
         biometric_count = db.query(func.count(BiometricData.biometric_id)).scalar() or 0
         logger.info(f"\n🟢 Biometric Records: {int(biometric_count):,}")
@@ -92,7 +92,7 @@ def verify_database():
             logger.info(f"   Fingerprint Quality: avg={bio_stats.avg_fp:.1f}% (min={bio_stats.min_fp}, max={bio_stats.max_fp})")
             logger.info(f"   Iris Quality: avg={bio_stats.avg_iris:.1f}%")
             logger.info(f"   Photo Quality: avg={bio_stats.avg_photo:.1f}%")
-        
+
         # Daily Stats
         daily_count = db.query(func.count(DailyStat.stat_id)).scalar() or 0
         logger.info(f"\n🟢 Daily Statistics: {int(daily_count)} days")
@@ -105,7 +105,7 @@ def verify_database():
             logger.info(f"   Total enrollments (aggregated): {int(daily_stats.total_enroll or 0):,}")
             logger.info(f"   Total updates (aggregated): {int(daily_stats.total_updates or 0):,}")
             logger.info(f"   Total generated (aggregated): {int(daily_stats.total_generated or 0):,}")
-        
+
         # Anomalies
         anomaly_count = db.query(func.count(Anomaly.anomaly_id)).scalar() or 0
         logger.info(f"\n🟢 Anomalies Detected: {int(anomaly_count)}")
@@ -113,17 +113,17 @@ def verify_database():
             anomalies = db.query(Anomaly).limit(5).all()
             for anom in anomalies:
                 logger.info(f"   • [{anom.severity}] {anom.anomaly_type}: {anom.description}")
-        
+
         # Admin Users
         admin_count = db.query(func.count(AdminUser.admin_id)).scalar() or 0
         logger.info(f"\n🟢 Admin Users: {int(admin_count)}")
-        
+
         # Summary
         total_records = int(enroll_count + update_count + biometric_count)
         logger.info("\n" + "="*70)
         logger.info(f"TOTAL RECORDS IN DATABASE: {total_records:,}")
         logger.info("="*70 + "\n")
-        
+
         if total_records > 0:
             logger.info("✓ DATABASE IS READY FOR ANALYTICS!")
             logger.info("\nTo start the backend:")
@@ -137,7 +137,7 @@ def verify_database():
             logger.info("  python scripts/generate_sample_data.py")
             logger.info("  python scripts/load_data_to_db.py")
             return False
-        
+
     except Exception as e:
         logger.error(f"✗ Database connection failed: {str(e)}")
         logger.info("\nPlease ensure:")

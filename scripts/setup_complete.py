@@ -94,7 +94,7 @@ def seed_regions():
     try:
         from backend.database import SessionLocal
         from backend.models.models import Region
-        
+
         db = SessionLocal()
         regions_data = [
             ('Maharashtra', 'Mumbai', 'MH-MUM'),
@@ -108,11 +108,11 @@ def seed_regions():
             ('Uttar Pradesh', 'Agra', 'UP-AGR'),
             ('Delhi', 'New Delhi', 'DL-NDL'),
         ]
-        
+
         for state, district, code in regions_data:
             if not db.query(Region).filter(Region.region_code == code).first():
                 db.add(Region(state_name=state, district_name=district, region_code=code))
-        
+
         db.commit()
         db.close()
         logger.info("✓ Regions seeded")
@@ -150,18 +150,18 @@ def load_data(data_dir=None):
         from backend.database import SessionLocal
         from backend.data_ingestion import DataIngestionPipeline
         import pandas as pd
-        
+
         data_dir = Path(data_dir) if data_dir else Path(__file__).parent.parent / 'data'
-        
+
         if not data_dir.exists():
             logger.warning("Data directory not found. Run: python scripts/generate_sample_data.py")
             return False
-        
+
         db = SessionLocal()
         pipeline = DataIngestionPipeline(db)
-        
+
         total_loaded = 0
-        
+
         # Load enrollments
         enroll_file = data_dir / 'api_data_aadhar_enrolment.csv'
         if enroll_file.exists():
@@ -170,7 +170,7 @@ def load_data(data_dir=None):
             count, _ = pipeline.ingest_enrollment_data(df)
             total_loaded += count
             logger.info(f"    ✓ {count:,} records")
-        
+
         # Load demographics
         demo_file = data_dir / 'api_data_aadhar_demographic.csv'
         if demo_file.exists():
@@ -179,7 +179,7 @@ def load_data(data_dir=None):
             count, _ = pipeline.ingest_demographic_data(df)
             total_loaded += count
             logger.info(f"    ✓ {count:,} records")
-        
+
         # Load biometrics
         biometric_file = data_dir / 'api_data_aadhar_biometric.csv'
         if biometric_file.exists():
@@ -188,15 +188,15 @@ def load_data(data_dir=None):
             count, _ = pipeline.ingest_biometric_data(df)
             total_loaded += count
             logger.info(f"    ✓ {count:,} records")
-        
+
         # Aggregate stats
         logger.info("  Aggregating daily statistics...")
         pipeline.aggregate_daily_stats()
-        
+
         # Detect anomalies
         logger.info("  Detecting anomalies...")
         anomaly_count = pipeline.detect_anomalies()
-        
+
         db.close()
         logger.info(f"✓ Data loaded: {total_loaded:,} records, {anomaly_count} anomalies detected")
         return True
@@ -242,17 +242,17 @@ def main():
     print("\n" + "="*70)
     print("AADHAAR PORTAL - COMPLETE SETUP WORKFLOW")
     print("="*70 + "\n")
-    
+
     # Test database connection
     if not test_db_connection():
         show_database_setup_instructions()
         sys.exit(1)
-    
+
     # Initialize schema
     if not init_database_schema():
         logger.error("Setup failed during schema initialization")
         sys.exit(1)
-    
+
     # Seed regions
     if not seed_regions():
         logger.error("Setup failed during region seeding")
@@ -262,14 +262,14 @@ def main():
     if not seed_admin_user():
         logger.error("Setup failed during admin user seeding")
         sys.exit(1)
-    
+
     # Load data
     if not load_data():
         logger.warning("Setup incomplete: Data not loaded")
         logger.info("Run: python scripts/generate_sample_data.py (if not done)")
         logger.info("Then retry: python scripts/setup_complete.py")
         # Don't exit - data can be loaded later via API
-    
+
     # Success
     print("\n" + "="*70)
     show_final_instructions()
@@ -277,4 +277,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

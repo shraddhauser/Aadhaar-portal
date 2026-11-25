@@ -13,7 +13,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from backend.models.models import (
-    Region, Enrollment, Update, BiometricData, 
+    Region, Enrollment, Update, BiometricData,
     DailyStat, Anomaly
 )
 from backend.database import SessionLocal
@@ -23,38 +23,38 @@ logger = logging.getLogger(__name__)
 
 class DataIngestionPipeline:
     """Handles data loading, cleaning, normalization, and database ingestion."""
-    
+
     def __init__(self, db: Session = None):
         self.db = db or SessionLocal()
         self.regions_cache = {}
         self.load_regions_cache()
-    
+
     def load_regions_cache(self):
         """Cache regions for quick lookup."""
         regions = self.db.query(Region).all()
         self.regions_cache = {r.region_code: r.region_id for r in regions}
-    
+
     def clean_and_normalize_enrollment_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Clean and normalize enrollment data.
         Handles missing values, invalid entries, and data type conversions.
         """
         df = df.copy()
-        
+
         # Standardize column names
         df.columns = df.columns.str.lower().str.strip()
-        
+
         # Handle date columns
         for date_col in ['enrollment_date', 'date_of_enrollment', 'enrollment_dt']:
             if date_col in df.columns:
                 df['enrollment_date'] = pd.to_datetime(df[date_col], errors='coerce')
                 if date_col != 'enrollment_date':  # keep the column we just parsed into
                     df = df.drop(date_col, axis=1)
-        
+
         # Ensure enrollment_date exists
         if 'enrollment_date' not in df.columns:
             df['enrollment_date'] = pd.Timestamp.now()
-        
+
         # Handle gender normalization
         gender_map = {
             'M': 'Male', 'm': 'Male', 'Male': 'Male', 'MALE': 'Male',
@@ -68,7 +68,7 @@ class DataIngestionPipeline:
             )
         else:
             df['gender'] = 'Other'
-        
+
         # Handle age group mapping
         def map_age_group(age):
             try:
@@ -85,20 +85,20 @@ class DataIngestionPipeline:
                     return '60+'
             except (ValueError, TypeError):
                 return '36-60'
-        
+
         if 'age' in df.columns:
             df['age_group'] = df['age'].apply(map_age_group)
         elif 'age_group' in df.columns:
             df['age_group'] = df['age_group'].apply(lambda x: x if x in ['0-18','19-35','36-60','60+'] else '36-60')
         else:
             df['age_group'] = '36-60'
-        
+
         # Handle region/district mapping
         if 'region_code' not in df.columns and 'district' in df.columns:
             df['region_code'] = df['district'].apply(self._map_district_to_region_code)
         elif 'region_code' not in df.columns:
             df['region_code'] = 'MH-MUM'  # Default fallback
-        
+
         # Enrollment status
         if 'enrollment_status' not in df.columns:
             df['enrollment_status'] = 'Pending'
@@ -107,40 +107,40 @@ class DataIngestionPipeline:
             df['enrollment_status'] = df['enrollment_status'].apply(
                 lambda x: x if x in valid_statuses else 'Pending'
             )
-        
+
         # Aadhaar generated flag
         if 'aadhaar_generated' not in df.columns:
             df['aadhaar_generated'] = df['enrollment_status'] == 'Generated'
         else:
             df['aadhaar_generated'] = df['aadhaar_generated'].astype(bool)
-        
+
         # Remove rows with null enrollment_date
         df = df.dropna(subset=['enrollment_date'])
-        
+
         # Select required columns
-        required_cols = ['enrollment_date', 'gender', 'age_group', 'enrollment_status', 
+        required_cols = ['enrollment_date', 'gender', 'age_group', 'enrollment_status',
                          'aadhaar_generated', 'region_code']
         df = df[required_cols]
-        
+
         return df
-    
+
     def clean_and_normalize_demographic_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Clean demographic data (for update records).
         """
         df = df.copy()
         df.columns = df.columns.str.lower().str.strip()
-        
+
         # Date handling
         for date_col in ['update_date', 'date_of_update', 'update_dt']:
             if date_col in df.columns:
                 df['update_date'] = pd.to_datetime(df[date_col], errors='coerce')
                 if date_col != 'update_date':  # keep the column we just parsed into
                     df = df.drop(date_col, axis=1)
-        
+
         if 'update_date' not in df.columns:
             df['update_date'] = pd.Timestamp.now()
-        
+
         # Update type mapping
         update_type_map = {
             'name': 'Name', 'address': 'Address', 'mobile': 'Mobile',
@@ -152,7 +152,7 @@ class DataIngestionPipeline:
             )
         else:
             df['update_type'] = 'Name'
-        
+
         # Update status
         if 'update_status' not in df.columns:
             df['update_status'] = 'Pending'
@@ -161,30 +161,30 @@ class DataIngestionPipeline:
             df['update_status'] = df['update_status'].apply(
                 lambda x: x if x in valid_statuses else 'Pending'
             )
-        
+
         # Region mapping
         if 'region_code' not in df.columns and 'district' in df.columns:
             df['region_code'] = df['district'].apply(self._map_district_to_region_code)
         elif 'region_code' not in df.columns:
             df['region_code'] = 'MH-MUM'
-        
+
         df = df.dropna(subset=['update_date'])
-        
+
         required_cols = ['update_date', 'update_type', 'update_status', 'region_code']
         return df[required_cols]
-    
+
     def clean_and_normalize_biometric_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Clean biometric quality metrics.
         """
         df = df.copy()
         df.columns = df.columns.str.lower().str.strip()
-        
+
         # Quality score normalization (0-100)
         for col in ['fingerprint_quality', 'iris_quality', 'photo_quality', 'fp_quality', 'iris_qual', 'photo_qual']:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce').clip(0, 100)
-        
+
         # Map various column names to standard names
         if 'fp_quality' in df.columns and 'fingerprint_quality' not in df.columns:
             df['fingerprint_quality'] = df['fp_quality']
@@ -192,7 +192,7 @@ class DataIngestionPipeline:
             df['iris_quality'] = df['iris_qual']
         if 'photo_qual' in df.columns and 'photo_quality' not in df.columns:
             df['photo_quality'] = df['photo_qual']
-        
+
         # Fill missing quality scores with random values (0-80 range for realism)
         if 'fingerprint_quality' not in df.columns:
             df['fingerprint_quality'] = np.random.randint(50, 95, len(df))
@@ -200,7 +200,7 @@ class DataIngestionPipeline:
             df['iris_quality'] = np.random.randint(50, 95, len(df))
         if 'photo_quality' not in df.columns:
             df['photo_quality'] = np.random.randint(60, 95, len(df))
-        
+
         # Enrollment date/ID
         if 'enrollment_date' not in df.columns:
             df['enrollment_date'] = pd.Timestamp.now()
@@ -215,7 +215,7 @@ class DataIngestionPipeline:
         if len(df) < before:
             logger.warning(f"Dropped {before - len(df)} biometric rows with missing scores or dates")
         return df[required_cols]
-    
+
     def _map_district_to_region_code(self, district):
         """Map district names to region codes."""
         district_map = {
@@ -225,7 +225,7 @@ class DataIngestionPipeline:
             'agra': 'UP-AGR', 'delhi': 'DL-NDL', 'new delhi': 'DL-NDL'
         }
         return district_map.get(str(district).lower().strip(), 'MH-MUM')
-    
+
     def ingest_enrollment_data(self, df: pd.DataFrame) -> Tuple[int, List[str]]:
         """
         Load enrollment data into the database.
@@ -233,10 +233,10 @@ class DataIngestionPipeline:
         """
         errors = []
         count = 0
-        
+
         try:
             df_clean = self.clean_and_normalize_enrollment_data(df)
-            
+
             for _, row in df_clean.iterrows():
                 try:
                     region_id = self.regions_cache.get(row['region_code'])
@@ -249,7 +249,7 @@ class DataIngestionPipeline:
                             logger.warning(f"Region {row['region_code']} not found, skipping record")
                             continue
                         region_id = region.region_id
-                    
+
                     enrollment = Enrollment(
                         region_id=region_id,
                         enrollment_date=row['enrollment_date'].date(),
@@ -262,25 +262,25 @@ class DataIngestionPipeline:
                     count += 1
                 except Exception as e:
                     errors.append(f"Row error: {str(e)}")
-            
+
             self.db.commit()
             logger.info(f"Ingested {count} enrollment records")
         except Exception as e:
             self.db.rollback()
             errors.append(f"Batch error: {str(e)}")
-        
+
         return count, errors
-    
+
     def ingest_demographic_data(self, df: pd.DataFrame) -> Tuple[int, List[str]]:
         """
         Load demographic/update data into the database.
         """
         errors = []
         count = 0
-        
+
         try:
             df_clean = self.clean_and_normalize_demographic_data(df)
-            
+
             for _, row in df_clean.iterrows():
                 try:
                     region_id = self.regions_cache.get(row['region_code'])
@@ -292,7 +292,7 @@ class DataIngestionPipeline:
                             logger.warning(f"Region {row['region_code']} not found, skipping")
                             continue
                         region_id = region.region_id
-                    
+
                     update = Update(
                         region_id=region_id,
                         update_date=row['update_date'].date(),
@@ -303,25 +303,25 @@ class DataIngestionPipeline:
                     count += 1
                 except Exception as e:
                     errors.append(f"Row error: {str(e)}")
-            
+
             self.db.commit()
             logger.info(f"Ingested {count} update records")
         except Exception as e:
             self.db.rollback()
             errors.append(f"Batch error: {str(e)}")
-        
+
         return count, errors
-    
+
     def ingest_biometric_data(self, df: pd.DataFrame) -> Tuple[int, List[str]]:
         """
         Load biometric quality data and link to enrollments.
         """
         errors = []
         count = 0
-        
+
         try:
             df_clean = self.clean_and_normalize_biometric_data(df)
-            
+
             # Get enrollments by date for linking
             enrollments = self.db.query(Enrollment).all()
             enroll_by_date = {}
@@ -330,23 +330,23 @@ class DataIngestionPipeline:
                 if date_key not in enroll_by_date:
                     enroll_by_date[date_key] = []
                 enroll_by_date[date_key].append(e.enrollment_id)
-            
+
             date_counters = {}
-            
+
             for _, row in df_clean.iterrows():
                 try:
                     date_key = row['enrollment_date'].date().isoformat()
-                    
+
                     if date_key not in enroll_by_date or not enroll_by_date[date_key]:
                         continue
-                    
+
                     # Cycle through enrollments for this date
                     if date_key not in date_counters:
                         date_counters[date_key] = 0
                     idx = date_counters[date_key] % len(enroll_by_date[date_key])
                     enrollment_id = enroll_by_date[date_key][idx]
                     date_counters[date_key] += 1
-                    
+
                     biometric = BiometricData(
                         enrollment_id=enrollment_id,
                         fingerprint_quality=int(row['fingerprint_quality']),
@@ -357,15 +357,15 @@ class DataIngestionPipeline:
                     count += 1
                 except Exception as e:
                     errors.append(f"Row error: {str(e)}")
-            
+
             self.db.commit()
             logger.info(f"Ingested {count} biometric records")
         except Exception as e:
             self.db.rollback()
             errors.append(f"Batch error: {str(e)}")
-        
+
         return count, errors
-    
+
     def aggregate_daily_stats(self) -> int:
         """
         Aggregate daily statistics from raw enrollment/update records.
@@ -373,52 +373,52 @@ class DataIngestionPipeline:
         try:
             # Get all unique dates from enrollments
             dates = self.db.query(Enrollment.enrollment_date).distinct().all()
-            
+
             for (date_val,) in dates:
                 # Check if stat already exists
                 existing = self.db.query(DailyStat).filter(
                     DailyStat.stat_date == date_val
                 ).first()
-                
+
                 if existing:
                     continue
-                
+
                 # Get all regions
                 regions = self.db.query(Region).all()
-                
+
                 for region in regions:
                     # Count enrollments for this date and region
                     enroll_count = self.db.query(Enrollment).filter(
                         Enrollment.enrollment_date == date_val,
                         Enrollment.region_id == region.region_id
                     ).count()
-                    
+
                     # Count updates
                     update_count = self.db.query(Update).filter(
                         Update.update_date == date_val,
                         Update.region_id == region.region_id
                     ).count()
-                    
+
                     # Count generated
                     generated_count = self.db.query(Enrollment).filter(
                         Enrollment.enrollment_date == date_val,
                         Enrollment.region_id == region.region_id,
                         Enrollment.aadhaar_generated == True  # noqa: E712 (SQLAlchemy column comparison)
                     ).count()
-                    
+
                     # Count pending and rejected
                     pending_count = self.db.query(Enrollment).filter(
                         Enrollment.enrollment_date == date_val,
                         Enrollment.region_id == region.region_id,
                         Enrollment.enrollment_status == 'Pending'
                     ).count()
-                    
+
                     rejected_count = self.db.query(Enrollment).filter(
                         Enrollment.enrollment_date == date_val,
                         Enrollment.region_id == region.region_id,
                         Enrollment.enrollment_status == 'Rejected'
                     ).count()
-                    
+
                     if enroll_count > 0 or update_count > 0:
                         daily_stat = DailyStat(
                             stat_date=date_val,
@@ -430,7 +430,7 @@ class DataIngestionPipeline:
                             rejected_count=rejected_count
                         )
                         self.db.add(daily_stat)
-            
+
             self.db.commit()
             logger.info("Daily statistics aggregated")
             return len(dates)
@@ -438,19 +438,19 @@ class DataIngestionPipeline:
             self.db.rollback()
             logger.error(f"Error aggregating stats: {str(e)}")
             return 0
-    
+
     def detect_anomalies(self) -> int:
         """
         Detect and flag data anomalies (low biometric quality, duplicates, etc.)
         """
         try:
             count = 0
-            
+
             # 1. Low biometric quality anomalies
             low_quality_enrolls = self.db.query(Enrollment).join(BiometricData).filter(
                 BiometricData.fingerprint_quality < 50
             ).all()
-            
+
             if len(low_quality_enrolls) > 10:
                 # Get unique regions
                 regions_with_low_quality = set(e.region_id for e in low_quality_enrolls)
@@ -460,7 +460,7 @@ class DataIngestionPipeline:
                         Anomaly.anomaly_type == 'Quality',
                         Anomaly.detected_on == pd.Timestamp.now().date()
                     ).first()
-                    
+
                     if not existing:
                         anomaly = Anomaly(
                             region_id=region_id,
@@ -471,7 +471,7 @@ class DataIngestionPipeline:
                         )
                         self.db.add(anomaly)
                         count += 1
-            
+
             # 2. High rejection rate anomalies
             regions = self.db.query(Region).all()
             for region in regions:
@@ -479,20 +479,20 @@ class DataIngestionPipeline:
                     Enrollment.region_id == region.region_id,
                     Enrollment.enrollment_date >= pd.Timestamp.now().date() - timedelta(days=7)
                 ).count()
-                
+
                 rejected = self.db.query(Enrollment).filter(
                     Enrollment.region_id == region.region_id,
                     Enrollment.enrollment_date >= pd.Timestamp.now().date() - timedelta(days=7),
                     Enrollment.enrollment_status == 'Rejected'
                 ).count()
-                
+
                 if recent_enroll > 20 and rejected / recent_enroll > 0.15:
                     existing = self.db.query(Anomaly).filter(
                         Anomaly.region_id == region.region_id,
                         Anomaly.anomaly_type == 'Surge',
                         Anomaly.detected_on == pd.Timestamp.now().date()
                     ).first()
-                    
+
                     if not existing:
                         anomaly = Anomaly(
                             region_id=region.region_id,
@@ -503,7 +503,7 @@ class DataIngestionPipeline:
                         )
                         self.db.add(anomaly)
                         count += 1
-            
+
             self.db.commit()
             logger.info(f"Detected {count} anomalies")
             return count
@@ -515,7 +515,7 @@ class DataIngestionPipeline:
 
 class PredictiveAnalytics:
     """Simple predictive models for enrollment trends and patterns."""
-    
+
     @staticmethod
     def forecast_enrollment_trend(db: Session, months_ahead: int = 3) -> Dict:
         """
@@ -524,12 +524,12 @@ class PredictiveAnalytics:
         """
         from sqlalchemy import extract
         from datetime import date
-        
+
         try:
             # Get historical monthly data (last 12 months)
             today = date.today()
             twelve_months_ago = today.replace(day=1) - timedelta(days=360)
-            
+
             rows = db.query(
                 extract("year", DailyStat.stat_date).label("year"),
                 extract("month", DailyStat.stat_date).label("month"),
@@ -537,18 +537,18 @@ class PredictiveAnalytics:
             ).filter(
                 DailyStat.stat_date >= twelve_months_ago
             ).group_by("year", "month").order_by("year", "month").all()
-            
+
             enrollments = [r.enrollments or 0 for r in rows]
-            
+
             if len(enrollments) < 3:
                 return {"error": "Insufficient historical data"}
-            
+
             # Simple exponential smoothing
             alpha = 0.3
             smoothed = [enrollments[0]]
             for i in range(1, len(enrollments)):
                 smoothed.append(alpha * enrollments[i] + (1 - alpha) * smoothed[-1])
-            
+
             # Forecast next months
             forecast = []
             last_smooth = smoothed[-1]
@@ -557,7 +557,7 @@ class PredictiveAnalytics:
                 forecast_val = last_smooth + trend * 0.5  # Dampen trend
                 forecast.append(int(max(0, forecast_val)))
                 last_smooth = forecast_val
-            
+
             return {
                 "historical": enrollments[-6:],  # Last 6 months
                 "forecast": forecast,
@@ -566,18 +566,18 @@ class PredictiveAnalytics:
         except Exception as e:
             logger.error(f"Error in forecast: {str(e)}")
             return {"error": str(e)}
-    
+
     @staticmethod
     def identify_growth_patterns(db: Session) -> Dict:
         """
         Identify regions with highest growth and potential issues.
         """
         from datetime import date
-        
+
         try:
             today = date.today()
             three_months_ago = today - timedelta(days=90)
-            
+
             rows = db.query(
                 Region.region_code,
                 Region.state_name,
@@ -588,7 +588,7 @@ class PredictiveAnalytics:
             ).group_by(Region.region_id).order_by(
                 func.sum(DailyStat.total_enrollments).desc()
             ).all()
-            
+
             patterns = []
             for row in rows:
                 patterns.append({
@@ -598,10 +598,8 @@ class PredictiveAnalytics:
                     "total_3mo": int(row.enrollments or 0),
                     "trend": "growing"
                 })
-            
+
             return {"patterns": patterns}
         except Exception as e:
             logger.error(f"Error identifying patterns: {str(e)}")
             return {"error": str(e)}
-
-
