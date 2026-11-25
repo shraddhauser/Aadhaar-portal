@@ -3,6 +3,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/shraddhauser/Aadhaar-portal/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/shraddhauser/Aadhaar-portal/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Python 3.11" src="https://img.shields.io/badge/python-3.11-blue">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green">
 </p>
@@ -13,9 +14,8 @@ recommendations, enrolment-surge detection, and a chatbot that answers
 questions about the numbers on screen. It was built as a four-person
 academic team project ("Unlocking Societal Trends in Aadhaar Enrolment and
 Updates") and is a **working prototype running on synthetic data**: no real
-UIDAI data is included. The backend has 81 automated tests (80 pass, 1 is a known
-bug marked as an expected failure) with 71% line coverage; source:
-`pytest --cov=backend`, see [Results](#results).
+UIDAI data is included. The backend has 110 automated tests with 75% line coverage
+(source: `pytest --cov=backend`, see [Results](#results)).
 
 ## Demo
 
@@ -26,9 +26,9 @@ bug marked as an expected failure) with 71% line coverage; source:
   and may take up to a minute to wake up.
 - **Walkthrough GIF:** `TODO: docs/images/demo.gif` (login → dashboard → anomalies)
 
-| Past history | Insights | Chatbot |
-|---|---|---|
-| ![History](docs/images/screenshot-history.png) | ![Insights](docs/images/screenshot-insights.png) | ![Chatbot](docs/images/screenshot-chatbot.png) |
+| Past history | Insights | Anomalies | Chatbot |
+|---|---|---|---|
+| ![History](docs/images/screenshot-history.png) | ![Insights](docs/images/screenshot-insights.png) | ![Anomalies](docs/images/screenshot-anomalies.png) | ![Chatbot](docs/images/screenshot-chatbot.png) |
 
 ## The problem
 
@@ -98,11 +98,17 @@ More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - **CSV import:** size limit, file-type check and required-column validation
   (missing columns are listed in the error).
 - **Export:** CSV and PDF export from the browser; a JSON summary report from the API.
-- **Chatbot (USTAD):** questions about the dashboard, answered by Claude with
-  live aggregates in the prompt. Off unless `ANTHROPIC_API_KEY` is set.
+- **Chatbot (USTAD):** questions about the dashboard, answered by Claude
+  (`claude-opus-5-5`) with live aggregates in the prompt. Only aggregates are
+  sent (never individual records), the summary is size-capped and marked as
+  data, and the model is told to ignore instructions in user messages. Off
+  unless `ANTHROPIC_API_KEY` is set.
 - **Read-only demo mode:** seeded synthetic data, a `Viewer` login, uploads disabled.
-- **Rate limiting on login and chat** **(planned)**
-- **Continuous integration** **(planned)**
+- **Rate limiting:** 5 logins and 10 chat questions per minute per client IP (429 beyond).
+- **API hygiene:** CORS restricted to configured origins, JSON 500s without
+  internal details (stack traces stay in the server log), `limit`/`offset`
+  pagination (max 500) on list endpoints, indexes on date and region columns.
+- **CI:** GitHub Actions runs ruff, pytest with coverage and oxlint on every push.
 
 ## Results
 
@@ -111,15 +117,14 @@ the measured engineering numbers.
 
 | Metric | Value | Source / how to reproduce |
 |---|---|---|
-| Automated tests | 80 passed, 1 expected failure | `pytest` (see [docs/TESTING.md](docs/TESTING.md)) |
-| Backend line coverage | 71% | `pytest --cov=backend --cov-report=term` |
-| Test suite run time | about 7 s on the development machine | `pytest` |
+| Automated tests | 110 passed | `pytest` (see [docs/TESTING.md](docs/TESTING.md)) |
+| Backend line coverage | 75% | `pytest --cov=backend --cov-report=term` |
+| Test suite run time | about 10 s on the development machine | `pytest` |
 | Synthetic rows in `data/` | 5,000 enrolments, 3,000 updates, 4,500 biometric | `wc -l data/*.csv` (minus header rows) |
 
 Limitations of these numbers: coverage counts lines run, not behaviour
-checked; tests use SQLite only, so MySQL-specific behaviour is untested. The
-one expected failure is a known bug: biometric loading fails under pandas 3,
-because `requirements.txt` does not pin pandas yet.
+checked; tests use SQLite only, so MySQL-specific behaviour is untested; the
+chatbot is tested against a mocked client, never the real API.
 
 ## Quick start
 
@@ -160,11 +165,12 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Expected: `80 passed, 1 xfailed` in a few seconds. No internet, database
+Expected: `110 passed` in about 10 seconds. No internet, database
 server or API key is needed. The suite covers auth (including expired and
 tampered tokens), every dashboard data route, CSV import validation, surge
-detection, the forecast, the export report, the chatbot with a mocked client,
-and the CSV cleaning rules. Details: [docs/TESTING.md](docs/TESTING.md).
+detection, the forecast, the export report, the chatbot with a mocked client
+(including that no row-level data reaches the prompt), rate limits, CORS,
+error handling, pagination and the CSV cleaning rules. Details: [docs/TESTING.md](docs/TESTING.md).
 
 ## Project structure
 
@@ -200,8 +206,6 @@ render.yaml         public demo deployment
 - **Synthetic data only.** All numbers describe generated data
   ([docs/DATA.md](docs/DATA.md)); region codes and district names in the CSVs
   don't always match.
-- **Biometric data does not load with pandas 3** (pinning planned), so
-  biometric scores show 0% and quality anomalies never fire.
 - **Analytics are rules, not models:** surge detection only compares today
   with the last 7 days; the forecast's confidence is a constant.
 - **Re-importing data for a date already in `daily_stats` does not update
@@ -209,9 +213,12 @@ render.yaml         public demo deployment
 - **Unknown districts default to Mumbai and invalid ages to 36–60** inside an
   accepted file.
 - The chatbot sends dashboard aggregates to a third-party API; without a key
-  it is disabled.
-- Planned: rate limiting on login and chat, pagination on list endpoints,
-  configurable CORS, CI, pinned dependencies.
+  it is disabled. Prompt-injection defences reduce, but cannot eliminate, the
+  chance of the model following instructions in a question.
+- Rate-limit counters live in memory, so they reset on restart and are not
+  shared between processes.
+- Future work: MySQL in CI, an audit log of imports, statistical (not
+  threshold) anomaly detection.
 
 ## Credits, licence, contact
 

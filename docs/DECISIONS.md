@@ -104,3 +104,50 @@ reasons are recorded as they were decided.
 - Trade-off accepted: files with alternative layouts need editing before
   upload; unknown districts and invalid ages inside an accepted file are still
   mapped to defaults (see [TESTING.md](TESTING.md)).
+
+## ADR-008: In-memory per-IP rate limits with slowapi
+
+- Context: login accepted unlimited password attempts, and every chat
+  request costs money at the LLM provider.
+- Options considered: no limits; slowapi with in-memory storage; slowapi
+  with Redis; limits at a reverse proxy.
+- Decision: slowapi, in memory, keyed on client IP: 5 logins and 10 chat
+  requests per minute, configurable by environment variable. Render runs
+  uvicorn with `--proxy-headers` so the real client IP is used.
+- Why: the app runs as a single process, so in-memory counters are enough
+  and need no extra service; limits live next to the routes and are testable.
+- Trade-off accepted: counters reset on restart and are not shared between
+  processes; users behind one shared IP share a limit.
+
+## ADR-009: Chatbot sees only bounded aggregates, marked as data
+
+- Context: the chat route puts live database numbers into the LLM prompt
+  next to free-text user questions, which opens the door to prompt injection
+  and to leaking records.
+- Options considered: send query results as-is; let the model call tools to
+  query the database; send a fixed-shape summary of aggregates.
+- Decision: keep the existing fixed-shape summary (counts, averages, region
+  names only), cap it at 4,000 characters, wrap it in `<dashboard_data>` tags
+  described as data, add rules telling the model to ignore instructions in
+  user messages, and limit input sizes (422). Tests check that no IDs,
+  usernames or per-record dates reach the summary and that its size does not
+  grow with the data.
+- Why: the model can only ever see what the summary contains, so even a
+  successful injection cannot reveal individual records.
+- Trade-off accepted: the chatbot cannot answer questions that need detail
+  beyond the summary; injection defences in the prompt reduce, but do not
+  remove, the chance of the model being steered.
+
+## ADR-010: Drop incomplete biometric rows instead of filling them
+
+- Context: the biometric cleaner filled missing scores with random numbers
+  and bad dates with "now", and the fill crashed on current pandas, so no
+  biometric data was ever stored.
+- Options considered: make the random fill work; fill with a mean or median;
+  drop incomplete rows.
+- Decision: drop rows with a missing or non-numeric score or an unparseable
+  date, and log how many were dropped. Extends ADR-007.
+- Why: averages and "low quality" anomalies should be computed only from
+  measured values.
+- Trade-off accepted: files with many gaps load fewer rows; the importer does
+  not report which rows were dropped, only the count in the server log.

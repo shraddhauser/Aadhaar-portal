@@ -82,8 +82,12 @@ enrollment_date,fingerprint_quality,iris_quality,photo_quality
 ```
 
 - Quality scores are clipped to 0–100.
-- **Simulated values:** if a quality column is missing entirely, the importer
-  fills it with random numbers (`np.random.randint`). Those scores are not data.
+- Rows with a missing or non-numeric score, or an unparseable date, are
+  dropped (the count is logged), not filled in.
+- **Simulated values:** if a quality column is missing entirely, the cleaning
+  code still fills it with random numbers (`np.random.randint`). The upload
+  API rejects such files (400), so this only applies to code that calls the
+  pipeline directly.
 - Rows are linked to enrolment records with the same `enrollment_date`; rows
   with no matching enrolment date are skipped.
 - Only quality scores are stored, never biometric images or templates.
@@ -116,10 +120,3 @@ curl -X POST http://localhost:8000/api/import/enrollments/upload \
 
 The other upload routes are `/api/import/demographic/upload` and
 `/api/import/biometric/upload`. `GET /api/import/status` returns row counts per table.
-
-## Known issue
-
-With the pandas version that `requirements.txt` currently allows (`pandas>=2.0.0`,
-which installs pandas 3.x), biometric loading fails with
-`"value" parameter must be a scalar, dict or Series, but you passed a "ndarray"`
-and 0 biometric rows are stored. Pinning pandas is scheduled in the revamp plan.

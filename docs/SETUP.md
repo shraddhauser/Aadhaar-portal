@@ -48,6 +48,9 @@ so nothing else is needed for a local run. `.env` is git-ignored: never commit i
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Used by `scripts/create_admin.py` / `setup_complete.py`; prompted for if empty |
 | `MAX_UPLOAD_MB` | CSV upload limit (default 10) |
 | `ANTHROPIC_API_KEY` | AI chatbot (optional; without it the chatbot returns 503) |
+| `ANTHROPIC_MODEL`, `ANTHROPIC_EFFORT` | Chatbot model and effort (default `claude-opus-5-5`, `low`) |
+| `CORS_ORIGINS` | Comma-separated origins allowed to call the API from another site (default: localhost:8000) |
+| `LOGIN_RATE_LIMIT`, `CHAT_RATE_LIMIT` | Per-IP limits (default `5/minute`, `10/minute`) |
 | `DEMO_MODE`, `DEMO_USERNAME`, `DEMO_PASSWORD` | Public demo only, see below |
 
 ## 3. Build the database
@@ -119,6 +122,13 @@ DEMO_MODE=true DB_FILE=demo.db python -m uvicorn backend.main:app --port 8000
 3. Deploy. The first start takes about 20–60 seconds while the database is
    built. Free services sleep when idle and rebuild the database on wake.
 
+## Upgrading an existing database
+
+Indexes on the date and region columns were added in v1.0.0. `create_all`
+does not add indexes to tables that already exist, so either rebuild the
+database (delete the SQLite file and run `python scripts/setup_complete.py`)
+or run the `CREATE INDEX` statements near the end of `database/schema.sql`.
+
 ## Using MySQL instead of SQLite
 
 1. Create the database:
@@ -139,5 +149,6 @@ DEMO_MODE=true DB_FILE=demo.db python -m uvicorn backend.main:app --port 8000
 | `Access denied for user 'root'@'localhost'` (MySQL) | Wrong `DB_PASSWORD` in `.env`, or the MySQL root password was never set. |
 | `Can't connect to MySQL server on 'localhost'` | MySQL isn't running. On Windows: `Get-Service mysql* \| Start-Service`. |
 | Dashboard shows no data | The database hasn't been built: run `python scripts/setup_complete.py`. |
+| `429 Too Many Requests` on login | More than 5 attempts in a minute from your IP; wait a minute. |
 | `ModuleNotFoundError: backend` | Run commands from the repo root, not from `backend/` or `scripts/`. |
 | `POST /api/auth/login` returns 422 | Send form fields, not a JSON body (see above). |

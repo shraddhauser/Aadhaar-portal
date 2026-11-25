@@ -46,14 +46,20 @@ flowchart LR
 4. Most dashboard numbers are read from `daily_stats` (pre-aggregated counts);
    the gender, age and status splits query `enrollments` directly.
 5. `/api/chat/ask` builds a text summary of current aggregates from the
-   database, puts it in the system prompt, and forwards the question to
-   Anthropic Claude. The API key stays on the server.
+   database (never individual records, capped at 4,000 characters), puts it in
+   the system prompt inside `<dashboard_data>` tags, and forwards the question
+   to Anthropic Claude (`claude-opus-5-5`) with the async SDK. The API key
+   stays on the server.
+6. Cross-cutting: login and chat are rate-limited per client IP
+   (`backend/rate_limit.py`, slowapi); CORS allows only `CORS_ORIGINS`; any
+   unhandled exception becomes a JSON 500 and is logged with its stack trace.
 
 ## Code layout
 
 | Path | Contents |
 |---|---|
 | `backend/main.py` | App setup, CORS, router registration, `/health`, static file serving |
+| `backend/rate_limit.py` | slowapi limiter and the login/chat limits |
 | `backend/database.py` | Engine and session from `DB_ENGINE` / `DB_URL` / `DB_FILE` (loads `.env`) |
 | `backend/models/models.py` | Tables: `regions`, `enrollments`, `updates`, `biometric_data`, `anomalies`, `daily_stats`, `admin_users` |
 | `backend/routes/` | One router per area: `auth`, `live_stats`, `history`, `insights`, `anomalies`, `data_export`, `data_import`, `chat` |
