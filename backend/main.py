@@ -3,9 +3,12 @@ Aadhaar Analytics Portal — Backend
 FastAPI application entry point.
 """
 
+import logging
+import os
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.routes import auth, live_stats, history, insights, anomalies, data_export, data_import, chat
@@ -16,16 +19,36 @@ app = FastAPI(
     version="1.0.0",
 )
 
+logger = logging.getLogger("backend")
+
 # -----------------------------------------------------------------
-# CORS — allow frontend origin (adjust in production)
+# CORS — only the origins listed in CORS_ORIGINS (comma-separated).
+# The bundled frontend is served from the same origin and needs no CORS;
+# list other origins only if a separately hosted frontend calls this API.
 # -----------------------------------------------------------------
+DEFAULT_CORS_ORIGINS = "http://localhost:8000,http://127.0.0.1:8000"
+CORS_ORIGINS = [
+    o.strip()
+    for o in os.getenv("CORS_ORIGINS", DEFAULT_CORS_ORIGINS).split(",")
+    if o.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=False,  # auth uses a Bearer header, not cookies
+    allow_methods=["GET", "POST"],
+    allow_headers=["Authorization", "Content-Type"],
 )
+
+
+# -----------------------------------------------------------------
+# Errors — unexpected exceptions become a JSON 500; the stack trace is
+# logged on the server and never sent to the client.
+# -----------------------------------------------------------------
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 from fastapi.responses import FileResponse
 
