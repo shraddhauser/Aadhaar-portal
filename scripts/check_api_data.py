@@ -1,36 +1,36 @@
+#!/usr/bin/env python3
 import urllib.request, urllib.parse, json
 
-def login_and_get_token(user='admin', pwd='Admin@1234'):
+API_BASE = 'http://127.0.0.1:8000/api'
+
+def login(user='admin', pwd='Admin@1234'):
+    url = f'{API_BASE}/auth/login'
     data = urllib.parse.urlencode({'username': user, 'password': pwd}).encode()
-    req = urllib.request.Request('http://127.0.0.1:8000/api/auth/login', data=data, headers={'Content-Type':'application/x-www-form-urlencoded'})
+    req = urllib.request.Request(url, data=data)
     with urllib.request.urlopen(req, timeout=10) as r:
-        body = r.read().decode()
-    return json.loads(body)['access_token']
+        return json.loads(r.read())
 
 
-def get_json(url, token):
-    hdr = {'Authorization': f'Bearer {token}'}
-    req = urllib.request.Request(url, headers=hdr)
+def get(path, token):
+    req = urllib.request.Request(f'{API_BASE}{path}')
+    req.add_header('Authorization', f'Bearer {token}')
     with urllib.request.urlopen(req, timeout=10) as r:
-        return r.getcode(), r.read().decode()
+        return json.loads(r.read())
 
 
-token = login_and_get_token()
-print('Got token (len)=', len(token))
-
-endpoints = [
-    'http://127.0.0.1:8000/api/live/summary',
-    'http://127.0.0.1:8000/api/live/gender-split',
-    'http://127.0.0.1:8000/api/live/age-split',
-    'http://127.0.0.1:8000/api/live/status-breakdown',
-    'http://127.0.0.1:8000/api/history/monthly-trend?year=2026',
-    'http://127.0.0.1:8000/api/history/regional-comparison?start_date=2026-01-01&end_date=2026-04-18'
-]
-
-for e in endpoints:
+if __name__ == '__main__':
     try:
-        code, body = get_json(e, token)
-        print('\n', e, code)
-        print(body[:1000])
-    except Exception as ex:
-        print('\nERROR', e, ex)
+        auth = login()
+        token = auth['access_token']
+        print('Logged in, token len:', len(token))
+
+        endpoints = ['/live/summary','/live/gender-split','/live/age-split','/live/status-breakdown','/live/update-types','/history/monthly-trend?year=2024']
+        for ep in endpoints:
+            try:
+                data = get(ep, token)
+                print('\n', ep, '->')
+                print(json.dumps(data, indent=2)[:1000])
+            except Exception as e:
+                print(ep, 'ERROR', e)
+    except Exception as e:
+        print('Login failed:', e)
