@@ -125,23 +125,20 @@ def seed_regions():
 
 
 def seed_admin_user():
-    """Seed a default admin user if not present."""
+    """Create the admin user from ADMIN_USERNAME/ADMIN_PASSWORD or a prompt."""
     logger.info("Seeding admin user...")
     try:
-        from backend.database import SessionLocal
-        from backend.models.models import AdminUser
-        from backend.routes import auth as auth_module
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from _credentials import get_admin_credentials
+        from create_admin import create_admin
 
-        db = SessionLocal()
-        if not db.query(AdminUser).filter(AdminUser.username == 'admin').first():
-            pwd_hash = auth_module.pwd_context.hash('Admin@1234')
-            admin = AdminUser(username='admin', password_hash=pwd_hash, full_name='Administrator', role='SuperAdmin')
-            db.add(admin)
-            db.commit()
-            logger.info("✓ Admin user created")
-        else:
-            logger.info("✓ Admin user already exists")
-        db.close()
+        creds = get_admin_credentials()
+        if creds is None:
+            logger.warning("⚠ No admin credentials given; skipping. "
+                           "Run: python scripts/create_admin.py")
+            return True
+        result = create_admin(*creds)
+        logger.info(f"✓ Admin user {result}")
         return True
     except Exception as e:
         logger.error(f"✗ Admin seeding failed: {str(e)}")
@@ -218,16 +215,14 @@ SETUP COMPLETE
 
 NEXT STEPS:
 
-1) Start the backend server:
-    cd backend
-    python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+1) Start the backend server (from the repo root):
+    python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 
 2) Open the dashboard in your browser:
     http://localhost:8000
 
-3) Login credentials:
-    Username: admin
-    Password: Admin@1234
+3) Log in with the admin account you just created
+   (create another with: python scripts/create_admin.py)
 
 4) Explore features:
     - Live statistics
@@ -237,7 +232,7 @@ NEXT STEPS:
 5) API docs:
     http://localhost:8000/docs
 
-6) Read detailed documentation in project files (DATA_INTEGRATION_GUIDE.md, etc.)
+6) Read docs/SETUP.md and docs/DATA.md
 
 """
 

@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 import urllib.request, urllib.parse, json
+from _credentials import get_admin_credentials
 API_BASE = 'http://127.0.0.1:8000/api'
 
-def login(user='admin', pwd='Admin@1234'):
+def login(user=None, pwd=None):
+    if user is None or pwd is None:
+        creds = get_admin_credentials()
+        if creds is None:
+            raise SystemExit('Set ADMIN_USERNAME and ADMIN_PASSWORD, or run in a terminal.')
+        user, pwd = creds
     url = f'{API_BASE}/auth/login'
     data = urllib.parse.urlencode({'username': user, 'password': pwd}).encode()
     req = urllib.request.Request(url, data=data)

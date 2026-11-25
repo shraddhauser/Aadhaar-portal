@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import urllib.request, urllib.error, urllib.parse
+from _credentials import get_admin_credentials
 
 paths = [
     'http://127.0.0.1:8000/',
@@ -11,7 +12,11 @@ paths = [
 for p in paths:
     try:
         if p.endswith('/api/auth/login'):
-            data = urllib.parse.urlencode({'username':'admin','password':'Admin@1234'}).encode()
+            creds = get_admin_credentials()
+            if creds is None:
+                print(p, 'SKIPPED (set ADMIN_USERNAME and ADMIN_PASSWORD)')
+                continue
+            data = urllib.parse.urlencode({'username': creds[0], 'password': creds[1]}).encode()
             req = urllib.request.Request(p, data=data)
             resp = urllib.request.urlopen(req, timeout=10)
         else:

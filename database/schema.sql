@@ -124,10 +124,9 @@ INSERT INTO regions (state_name, district_name, region_code) VALUES
 ('Delhi','New Delhi','DL-NDL');
 
 -- -------------------------------------------------------------
--- Seed: Default admin (password: Admin@1234 — change in prod)
+-- Admin users are not seeded here. Create one with:
+--   python scripts/create_admin.py
 -- -------------------------------------------------------------
-INSERT INTO admin_users (username, password_hash, full_name, role)
-VALUES ('admin', '$2b$12$KIX9XaRb8HtF5nV2Qe3.Ke8m2mHgz5lP7YqNwJFHlRpXtGZwDtCdW', 'System Admin', 'SuperAdmin');
 
 -- -------------------------------------------------------------
 -- View: enrollment_summary — used by the analytics API

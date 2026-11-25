@@ -69,7 +69,7 @@ SOURCE /path/to/aadhaar-portal/database/schema.sql;
 
 This creates the `aadhaar_analytics` database, all tables, seed regions, and a default admin user.
 
-**Default credentials:** `admin` / `Admin@1234` *(change in production!)*
+Create the admin account with `python scripts/create_admin.py`.
 
 ---
 
@@ -130,8 +130,7 @@ Then visit: `http://localhost:3000/login.html`
 ### Step 4 — First Login
 
 1. Open `http://localhost:3000/login.html`
-2. Username: `admin`
-3. Password: `Admin@1234`
+2. Log in with the account created by `scripts/create_admin.py`
 4. You will be redirected to the main dashboard
 
 ---

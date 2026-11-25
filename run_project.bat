@@ -56,7 +56,7 @@ echo   Starting Aadhaar Portal...
 echo.
 echo   Frontend + Backend : http://localhost:8000
 echo   API Docs (Swagger) : http://localhost:8000/docs
-echo   Login Credentials  : admin / Admin@1234
+echo   First run? Create a login with: python scripts\create_admin.py
 echo.
 echo   Press Ctrl+C to stop the server.
 echo ═══════════════════════════════════════════════════════════════
