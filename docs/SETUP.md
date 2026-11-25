@@ -67,8 +67,9 @@ To add or reset an admin later:
 ```bash
 python scripts/create_admin.py            # asks for username and password
 python scripts/create_admin.py --reset    # change an existing user's password
-``` Check the
-result with:
+```
+
+Check the result with:
 
 ```bash
 python scripts/verify_database.py
