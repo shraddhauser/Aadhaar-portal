@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
+import urllib.error
+import urllib.parse
 from _credentials import get_admin_credentials
 
 paths = [

@@ -184,7 +184,7 @@ def _gather_portal_context(db: Session) -> str:
         Anomaly.severity,
         func.count(Anomaly.anomaly_id).label("count"),
     ).filter(
-        Anomaly.resolved == False
+        Anomaly.resolved == False  # noqa: E712 (SQLAlchemy column comparison)
     ).group_by(Anomaly.severity).all()
 
     anomaly_lines = [f"- {r.severity}: {r.count}" for r in anomaly_counts]

@@ -6,11 +6,11 @@ Handles Aadhaar enrollment, demographic, and biometric data import.
 
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import List, Dict, Tuple
 import logging
+from sqlalchemy import func
 from sqlalchemy.orm import Session
-from pathlib import Path
 
 from backend.models.models import (
     Region, Enrollment, Update, BiometricData, 
@@ -403,7 +403,7 @@ class DataIngestionPipeline:
                     generated_count = self.db.query(Enrollment).filter(
                         Enrollment.enrollment_date == date_val,
                         Enrollment.region_id == region.region_id,
-                        Enrollment.aadhaar_generated == True
+                        Enrollment.aadhaar_generated == True  # noqa: E712 (SQLAlchemy column comparison)
                     ).count()
                     
                     # Count pending and rejected
@@ -572,7 +572,6 @@ class PredictiveAnalytics:
         """
         Identify regions with highest growth and potential issues.
         """
-        from sqlalchemy import extract
         from datetime import date
         
         try:
@@ -606,5 +605,3 @@ class PredictiveAnalytics:
             return {"error": str(e)}
 
 
-# Import func at module level
-from sqlalchemy import func

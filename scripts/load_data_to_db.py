@@ -5,7 +5,6 @@ Can be run directly or called from the API.
 """
 
 import sys
-import os
 from pathlib import Path
 import pandas as pd
 import logging

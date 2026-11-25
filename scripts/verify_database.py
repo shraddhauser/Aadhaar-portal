@@ -61,7 +61,6 @@ def verify_database():
                 logger.info(f"     - {status}: {int(count):,}")
             
             # Date range
-            from sqlalchemy import func as sqlfunc
             first_date = db.query(func.min(Enrollment.enrollment_date)).scalar()
             last_date = db.query(func.max(Enrollment.enrollment_date)).scalar()
             logger.info(f"   Date range: {first_date} to {last_date}")

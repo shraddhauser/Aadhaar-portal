@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-import urllib.request, urllib.parse, json
+import urllib.request
+import urllib.parse
+import json
 from _credentials import get_admin_credentials
 API_BASE = 'http://127.0.0.1:8000/api'
 

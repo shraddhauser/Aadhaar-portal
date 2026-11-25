@@ -9,7 +9,7 @@ from sqlalchemy import func
 from datetime import date, timedelta
 
 from backend.database import get_db
-from backend.models.models import DailyStat, Enrollment, Update, Region, Anomaly
+from backend.models.models import DailyStat, Region, Anomaly
 from backend.routes.auth import get_current_admin
 
 router = APIRouter()
@@ -49,7 +49,7 @@ def summary_report(
 
     # Unresolved anomalies count
     anomaly_count = db.query(func.count(Anomaly.anomaly_id)).filter(
-        Anomaly.resolved == False
+        Anomaly.resolved == False  # noqa: E712 (SQLAlchemy column comparison)
     ).scalar() or 0
 
     return {

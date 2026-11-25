@@ -3,16 +3,19 @@ backend/routes/insights.py
 Improvement & insights recommendation endpoint.
 """
 
+import logging
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import date, timedelta
 
 from backend.database import get_db
-from backend.models.models import DailyStat, Anomaly, Region, Enrollment, BiometricData
+from backend.models.models import DailyStat, Region, Enrollment, BiometricData
 from backend.routes.auth import get_current_admin
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get("/recommendations")
@@ -175,8 +178,8 @@ def trends_forecast(
         ml_result = PredictiveAnalytics.forecast_enrollment_trend(db, months_ahead=3)
         if 'forecast' in ml_result:
             ml_forecast = ml_result.get('forecast')
-    except:
-        pass
+    except Exception:
+        logger.warning("Forecast unavailable", exc_info=True)
 
     return {
         "history":        history,

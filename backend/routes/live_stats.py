@@ -5,7 +5,7 @@ Real-time enrolment and update metrics endpoint.
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, cast, Date
+from sqlalchemy import func
 from datetime import date, timedelta
 
 from backend.database import get_db

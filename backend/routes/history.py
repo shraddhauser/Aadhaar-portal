@@ -9,7 +9,7 @@ from sqlalchemy import func, extract
 from datetime import date
 
 from backend.database import get_db
-from backend.models.models import DailyStat, Enrollment, Update, Region
+from backend.models.models import DailyStat, Update, Region
 from backend.routes.auth import get_current_admin
 
 router = APIRouter()

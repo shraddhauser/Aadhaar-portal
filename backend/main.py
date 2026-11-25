@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from slowapi import _rate_limit_exceeded_handler
@@ -58,7 +58,6 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     logger.exception("Unhandled error on %s %s", request.method, request.url.path)
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
-from fastapi.responses import FileResponse
 
 # -----------------------------------------------------------------
 # Routers

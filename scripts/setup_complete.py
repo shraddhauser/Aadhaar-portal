@@ -5,9 +5,7 @@
 # """
 
 import sys
-import os
 from pathlib import Path
-from subprocess import run, PIPE
 import logging
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -29,7 +27,7 @@ def test_db_connection():
         connect_args = {"check_same_thread": False} if DB_ENGINE == "sqlite" else {}
         engine = create_engine(DATABASE_URL, connect_args=connect_args)
         with engine.connect() as conn:
-            result = conn.execute(text("SELECT 1"))
+            conn.execute(text("SELECT 1"))
             logger.info("✓ Database connection successful!")
             if DB_ENGINE == "sqlite":
                 logger.info(f"  SQLite file: {DB_FILE}")
