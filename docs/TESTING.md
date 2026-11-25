@@ -17,8 +17,8 @@ Coverage:
 pytest --cov=backend --cov-report=term
 ```
 
-Last measured on 2026-11-25: **69% line coverage of `backend/`**, from
-77 collected tests (72 passed, 5 expected failures; see below). Re-run the
+Last measured on 2026-11-25: **71% line coverage of `backend/`**, from
+80 collected tests (79 passed, 1 expected failure; see below). Re-run the
 command above to check the current figure.
 
 ## How the fixtures work
@@ -65,9 +65,11 @@ fixed, as a reminder to remove the marker.
 
 | Test | Bug |
 |---|---|
-| `test_parsed_date_is_kept`, `test_rows_without_a_date_are_dropped`, `test_upload_keeps_the_dates_from_the_csv` | `clean_and_normalize_enrollment_data` drops the parsed `enrollment_date` column and refills it with the current time, so every imported enrolment gets the import date. `clean_and_normalize_demographic_data` does the same with `update_date`. |
-| `test_gender_is_normalised[male-Male]` | Lower-case `male` / `female` are not in the gender map and become `Other`. |
 | `test_biometric_scores_are_clipped_to_0_100` | `fillna(ndarray)` is rejected by pandas 3.x, which `pandas>=2.0.0` in `requirements.txt` allows. Biometric loading stores 0 rows. |
+
+Fixed on 2026-11-25 (tests now pass normally): imported enrolment and update
+dates were replaced with the import date, and lower-case `male` / `female`
+became `Other`.
 
 ## Current behaviour that is tested but questionable
 
