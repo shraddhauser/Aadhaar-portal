@@ -145,15 +145,15 @@ def seed_admin_user():
         return False
 
 
-def load_data():
-    """Load sample data from CSV."""
+def load_data(data_dir=None):
+    """Load sample data from CSV files in data_dir (default: data/)."""
     logger.info("Loading sample data...")
     try:
         from backend.database import SessionLocal
         from backend.data_ingestion import DataIngestionPipeline
         import pandas as pd
         
-        data_dir = Path(__file__).parent.parent / 'data'
+        data_dir = Path(data_dir) if data_dir else Path(__file__).parent.parent / 'data'
         
         if not data_dir.exists():
             logger.warning("Data directory not found. Run: python scripts/generate_sample_data.py")

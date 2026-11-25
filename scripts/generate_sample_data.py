@@ -28,6 +28,9 @@ REGIONS = [
     ('DL-NDL', 'Delhi', 'New Delhi'),
 ]
 
+# Where the CSVs are written; main(out_dir=...) can change it.
+OUT_DIR = Path(__file__).parent.parent / 'data'
+
 GENDERS = ['Male', 'Female', 'Other']
 AGE_GROUPS = ['0-18', '19-35', '36-60', '60+']
 ENROLLMENT_STATUSES = ['Pending', 'Verified', 'Rejected', 'Generated']
@@ -67,7 +70,7 @@ def generate_enrollment_data(num_records=5000, days_back=365):
         })
     
     df = pd.DataFrame(data)
-    output_path = Path(__file__).parent.parent / 'data' / 'api_data_aadhar_enrolment.csv'
+    output_path = OUT_DIR / 'api_data_aadhar_enrolment.csv'
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False)
     print(f"✓ Enrollment data saved to {output_path}")
@@ -104,7 +107,7 @@ def generate_demographic_data(num_records=3000, days_back=365):
         })
     
     df = pd.DataFrame(data)
-    output_path = Path(__file__).parent.parent / 'data' / 'api_data_aadhar_demographic.csv'
+    output_path = OUT_DIR / 'api_data_aadhar_demographic.csv'
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False)
     print(f"✓ Demographic data saved to {output_path}")
@@ -149,20 +152,29 @@ def generate_biometric_data(num_records=4500, days_back=365):
         })
     
     df = pd.DataFrame(data)
-    output_path = Path(__file__).parent.parent / 'data' / 'api_data_aadhar_biometric.csv'
+    output_path = OUT_DIR / 'api_data_aadhar_biometric.csv'
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False)
     print(f"✓ Biometric data saved to {output_path}")
     return df
 
 
-def main(years: int = 1, days: int | None = None):
+def main(years: int = 1, days: int | None = None, seed: int | None = None,
+         out_dir: Path | None = None):
     """Generate all sample datasets.
 
     Args:
         years: number of years to span (approximate, each year = 365 days)
         days: exact days_back to use (overrides years when provided)
+        seed: random seed, for reproducible output
+        out_dir: directory to write the CSVs to (default: data/)
     """
+    global OUT_DIR
+    if out_dir is not None:
+        OUT_DIR = Path(out_dir)
+    if seed is not None:
+        random.seed(seed)
+        np.random.seed(seed)
     print("=" * 60)
     print("AADHAAR PORTAL - SAMPLE DATA GENERATOR")
     print("=" * 60)
@@ -177,7 +189,7 @@ def main(years: int = 1, days: int | None = None):
     print("\n" + "=" * 60)
     print("✓ ALL SAMPLE DATASETS GENERATED SUCCESSFULLY")
     print("=" * 60)
-    print("\nDatasets created in ./data/ directory:")
+    print(f"\nDatasets created in {OUT_DIR}:")
     print("  - api_data_aadhar_enrolment.csv (5000 records)")
     print("  - api_data_aadhar_demographic.csv (3000 records)")
     print("  - api_data_aadhar_biometric.csv (4500 records)")
@@ -192,5 +204,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate Aadhaar sample datasets')
     parser.add_argument('--years', type=int, default=1, help='Number of years to span (approx)')
     parser.add_argument('--days', type=int, help='Exact number of days_back to use (overrides years)')
+    parser.add_argument('--seed', type=int, help='Random seed for reproducible output')
+    parser.add_argument('--out', type=Path, help='Output directory (default: data/)')
     args = parser.parse_args()
-    main(years=args.years, days=args.days)
+    main(years=args.years, days=args.days, seed=args.seed, out_dir=args.out)
