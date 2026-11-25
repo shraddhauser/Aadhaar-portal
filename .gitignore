@@ -33,8 +33,10 @@ build/
 # Node modules (if any frontend uses npm)
 node_modules/
 
-# Ignore nothing else so all code, database, and .env are included
-# (Remove .env below if you want to share it)
-# .env
+# Local databases (rebuild with: python scripts/setup_complete.py)
+*.db
+*.sqlite3
 
-# If you want to share .env, do NOT include it here.
+# Secrets: never commit .env (copy .env.template instead)
+.env
+
