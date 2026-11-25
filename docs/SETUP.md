@@ -143,12 +143,4 @@ or run the `CREATE INDEX` statements near the end of `database/schema.sql`.
 
 ## Troubleshooting
 
-| Symptom | Fix |
-|---|---|
-| `Failed to build ... pydantic-core` during install | You are on Python 3.13. Use Python 3.11. |
-| `Access denied for user 'root'@'localhost'` (MySQL) | Wrong `DB_PASSWORD` in `.env`, or the MySQL root password was never set. |
-| `Can't connect to MySQL server on 'localhost'` | MySQL isn't running. On Windows: `Get-Service mysql* \| Start-Service`. |
-| Dashboard shows no data | The database hasn't been built: run `python scripts/setup_complete.py`. |
-| `429 Too Many Requests` on login | More than 5 attempts in a minute from your IP; wait a minute. |
-| `ModuleNotFoundError: backend` | Run commands from the repo root, not from `backend/` or `scripts/`. |
-| `POST /api/auth/login` returns 422 | Send form fields, not a JSON body (see above). |
+See [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
