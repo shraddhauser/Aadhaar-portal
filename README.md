@@ -1,417 +1,220 @@
-# Aadhaar Analytics Portal
+<p align="center">
+  <img src="docs/images/banner.svg" alt="Aadhaar Analytics Portal" width="100%">
+</p>
 
-A modern full-stack analytics and monitoring platform for Aadhaar enrollment and update operations, providing real-time insights, data visualization, API-driven analytics, and administrative monitoring capabilities.
+<p align="center">
+  <img alt="Python 3.11" src="https://img.shields.io/badge/python-3.11-blue">
+  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green">
+</p>
 
----
+A web dashboard for exploring Aadhaar enrolment, demographic-update and
+biometric-quality data: live KPIs, historical trends, rule-based
+recommendations, enrolment-surge detection, and a chatbot that answers
+questions about the numbers on screen. It was built as a four-person
+academic team project ("Unlocking Societal Trends in Aadhaar Enrolment and
+Updates") and is a **working prototype running on synthetic data**: no real
+UIDAI data is included. The backend has 81 automated tests (80 pass, 1 is a known
+bug marked as an expected failure) with 71% line coverage; source:
+`pytest --cov=backend`, see [Results](#results).
 
-## Overview
+## Demo
 
-The Aadhaar Analytics Portal is designed to help administrators monitor enrollment activities, track demographic trends, analyze update requests, and generate operational insights from Aadhaar-related datasets.
+![Live statistics dashboard](docs/images/screenshot-live.png)
 
-The platform combines:
+- **Live demo:** `TODO: add the Render URL after deploying` (log in as `demo` /
+  `TODO: demo-only password`). The demo is read-only, runs on synthetic data,
+  and may take up to a minute to wake up.
+- **Walkthrough GIF:** `TODO: docs/images/demo.gif` (login → dashboard → anomalies)
 
-* FastAPI Backend Services
-* React Frontend Dashboard
-* SQLite / SQLAlchemy Data Layer
-* REST APIs
-* Authentication & Authorization
-* Analytics and Reporting Engine
-* Health Monitoring Utilities
+| Past history | Insights | Chatbot |
+|---|---|---|
+| ![History](docs/images/screenshot-history.png) | ![Insights](docs/images/screenshot-insights.png) | ![Chatbot](docs/images/screenshot-chatbot.png) |
 
----
+## The problem
 
-## Key Features
+Aadhaar enrolment and update activity varies a lot across regions, age groups
+and request types, and administrators need to see where enrolments are
+lagging, where rejections are high, and where something unusual is happening.
+Raw CSV exports don't make those patterns visible. This project puts the
+three datasets (enrolment, demographic updates, biometric quality) behind one
+login-protected dashboard that turns them into trends, flags and suggested
+actions. The project proposal is in [`docs/project-report.pdf`](docs/project-report.pdf).
 
-### Dashboard Analytics
+## What I built / my role
 
-* Total Aadhaar Enrollments
-* Daily Enrollment Statistics
-* Update Request Tracking
-* Region-wise Analytics
-* Age Group Distribution
-* Gender Distribution
-* Historical Trend Analysis
+`TODO(Shraddha): describe exactly which parts you built.` This was a team
+project; see [CONTRIBUTORS.md](CONTRIBUTORS.md) for each member's work.
 
-### User Management
+## Architecture
 
-* Secure Login System
-* JWT Authentication
-* Role-Based Access Control
-* Session Management
-
-### Data Management
-
-* Enrollment Records
-* Aadhaar Update Requests
-* Historical Analytics
-* Data Validation
-* Audit Logging
-
-### Monitoring & Health Checks
-
-* API Health Monitoring
-* Frontend Availability Checks
-* Database Integrity Validation
-* Automated Diagnostics
-
-### Reporting
-
-* Daily Reports
-* Monthly Reports
-* Exportable Analytics
-* Historical Trend Reports
-
----
-
-# System Architecture
-
-```text
-┌─────────────────────┐
-│   React Frontend    │
-│     Port : 3000     │
-└──────────┬──────────┘
-           │ REST API
-           ▼
-┌─────────────────────┐
-│   FastAPI Backend   │
-│     Port : 8000     │
-└──────────┬──────────┘
-           │ SQLAlchemy
-           ▼
-┌─────────────────────┐
-│ SQLite Database     │
-│ aadhaar_analytics.db│
-└─────────────────────┘
+```mermaid
+flowchart LR
+    B[Browser<br/>vanilla JS + Chart.js] -- "fetch + JWT" --> API[FastAPI routers<br/>auth · live · history · insights<br/>anomalies · export · import · chat]
+    API --> DB[(SQLite / MySQL)]
+    CSV[data/*.csv<br/>synthetic] --> ING[Ingestion pipeline<br/>clean · load · aggregate · detect] --> DB
+    API -- "upload" --> ING
+    API -- "aggregates + question" --> LLM[Anthropic Claude]
 ```
 
----
+1. One FastAPI process serves the HTML/JS pages and the JSON API.
+2. Users log in with a JWT; every `/api` call carries it. Only `SuperAdmin`
+   can import data.
+3. CSVs go through a cleaning pipeline that stores rows, builds a per-day,
+   per-region `daily_stats` table and runs anomaly rules.
+4. Dashboard routes read mostly from `daily_stats`; Chart.js draws the results.
+5. The chatbot builds a summary of current aggregates, adds it to the prompt
+   and calls Anthropic Claude from the server, so the key never reaches the browser.
 
-# Technology Stack
+More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## Frontend
+## Tech stack
 
-* React.js
-* HTML5
-* CSS3
-* JavaScript
-* Chart.js
+| Layer | Technology | Why chosen |
+|---|---|---|
+| API | FastAPI 0.111, Python 3.11 | Typed request validation and automatic OpenAPI docs at `/docs` |
+| Database | SQLAlchemy 2.0; SQLite by default, MySQL via `DB_ENGINE` | SQLite runs with zero setup; MySQL for a shared deployment |
+| Auth | JWT (`python-jose`), `passlib` password hashing | Stateless tokens fit a single-page dashboard calling an API |
+| Frontend | Vanilla HTML/CSS/JS, Chart.js 4.4.1 | Two pages need no framework or build step |
+| Data processing | pandas | CSV parsing and cleaning before insert |
+| Chatbot | Anthropic Claude (server-side proxy) | Answers grounded in live dashboard numbers without exposing the key |
+| Tests | pytest, FastAPI `TestClient`, in-memory SQLite | Fast, offline, no API keys |
+| Demo hosting | Render (free web service) | One service serves both API and frontend |
 
-## Backend
+## Key features
 
-* FastAPI
-* Python 3.11+
-* SQLAlchemy
-* Pydantic
+- **Login and roles:** JWT login; `SuperAdmin`, `Analyst` and `Viewer` roles;
+  only `SuperAdmin` can import data. Admin accounts are created with
+  `scripts/create_admin.py`, never hard-coded.
+- **Live statistics:** KPI cards plus gender, age-group, status and
+  update-type charts, filterable by region; auto-refresh every 60 seconds.
+- **Past history:** monthly trend per year, year-over-year totals, regional
+  comparison and update history for a date range.
+- **Rule-based recommendations:** fixed thresholds (e.g. rejection rate above
+  10% in 30 days, more than 100 pending) produce action items. Not a trained model.
+- **Surge detection:** flags regions whose enrolments today are at least
+  N% (default 50%) above their previous 7-day average.
+- **Forecast:** 3-month moving average and damped exponential smoothing.
+  Simple statistics, not machine learning; the reported `confidence` is a fixed value.
+- **CSV import:** size limit, file-type check and required-column validation
+  (missing columns are listed in the error).
+- **Export:** CSV and PDF export from the browser; a JSON summary report from the API.
+- **Chatbot (USTAD):** questions about the dashboard, answered by Claude with
+  live aggregates in the prompt. Off unless `ANTHROPIC_API_KEY` is set.
+- **Read-only demo mode:** seeded synthetic data, a `Viewer` login, uploads disabled.
+- **Rate limiting on login and chat** **(planned)**
+- **Continuous integration** **(planned)**
 
-## Database
+## Results
 
-* SQLite
-* SQLAlchemy ORM
+There are no analytical results to report: the data is synthetic. These are
+the measured engineering numbers.
 
-## Authentication
+| Metric | Value | Source / how to reproduce |
+|---|---|---|
+| Automated tests | 80 passed, 1 expected failure | `pytest` (see [docs/TESTING.md](docs/TESTING.md)) |
+| Backend line coverage | 71% | `pytest --cov=backend --cov-report=term` |
+| Test suite run time | about 7 s on the development machine | `pytest` |
+| Synthetic rows in `data/` | 5,000 enrolments, 3,000 updates, 4,500 biometric | `wc -l data/*.csv` (minus header rows) |
 
-* JWT Tokens
-* Password Hashing
+Limitations of these numbers: coverage counts lines run, not behaviour
+checked; tests use SQLite only, so MySQL-specific behaviour is untested. The
+one expected failure is a known bug: biometric loading fails under pandas 3,
+because `requirements.txt` does not pin pandas yet.
 
-## DevOps
+## Quick start
 
-* GitHub Actions
-* Docker
-* Automated Testing
+Requires Python 3.11.
 
----
-
-# Project Structure
-
-```text
-aadhaar-portal/
-│
-├── backend/
-│   ├── app/
-│   ├── api/
-│   ├── models/
-│   ├── services/
-│   ├── database/
-│   ├── middleware/
-│   └── tests/
-│
-├── frontend/
-│   ├── src/
-│   ├── public/
-│   ├── assets/
-│   └── tests/
-│
-├── scripts/
-│
-├── docs/
-│
-├── docker/
-│
-├── .github/
-│   └── workflows/
-│
-├── requirements.txt
-├── pyproject.toml
-├── .env.example
-└── README.md
-```
-
----
-
-# Installation
-
-## Clone Repository
+Linux / macOS:
 
 ```bash
-git clone https://github.com/your-username/aadhaar-portal.git
-
-cd aadhaar-portal
+git clone https://github.com/shraddhauser/Aadhaar-portal.git
+cd Aadhaar-portal
+python3.11 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp .env.template .env
+python scripts/setup_complete.py        # builds the DB, asks for an admin username/password
+python -m uvicorn backend.main:app --port 8000
 ```
 
-## Create Virtual Environment
-
-```bash
-python -m venv .venv
-```
-
-### Windows
+Windows (PowerShell):
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-### Linux / macOS
-
-```bash
-source .venv/bin/activate
-```
-
-## Install Dependencies
-
-```bash
+git clone https://github.com/shraddhauser/Aadhaar-portal.git
+cd Aadhaar-portal
+py -3.11 -m venv venv; venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+copy .env.template .env
+python scripts\setup_complete.py
+python -m uvicorn backend.main:app --port 8000
 ```
 
----
+Open http://localhost:8000 and log in with the admin account you created.
+API docs are at http://localhost:8000/docs. Full guide, MySQL and Render
+deployment: [docs/SETUP.md](docs/SETUP.md).
 
-# Environment Configuration
-
-Create a `.env` file.
-
-```env
-DATABASE_URL=sqlite:///aadhaar_analytics.db
-
-API_HOST=127.0.0.1
-API_PORT=8000
-
-FRONTEND_URL=http://127.0.0.1:3000
-
-SECRET_KEY=your_secret_key
-
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-```
-
----
-
-# Running the Application
-
-## Backend
+## Running tests
 
 ```bash
-uvicorn app.main:app --reload
-```
-
-Backend URL:
-
-```text
-http://127.0.0.1:8000
-```
-
-Swagger Documentation:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
----
-
-## Frontend
-
-```bash
-npm install
-
-npm start
-```
-
-Frontend URL:
-
-```text
-http://127.0.0.1:3000
-```
-
----
-
-# Testing
-
-## Run All Tests
-
-```bash
+pip install -r requirements-dev.txt
 pytest
 ```
 
-## Backend Smoke Test
+Expected: `80 passed, 1 xfailed` in a few seconds. No internet, database
+server or API key is needed. The suite covers auth (including expired and
+tampered tokens), every dashboard data route, CSV import validation, surge
+detection, the forecast, the export report, the chatbot with a mocked client,
+and the CSV cleaning rules. Details: [docs/TESTING.md](docs/TESTING.md).
 
-```bash
-python scripts/smoke_test.py
+## Project structure
+
+```
+backend/            FastAPI app
+  main.py           app setup, routers, /health, static files
+  routes/           auth, live_stats, history, insights, anomalies, data_export, data_import, chat
+  data_ingestion.py CSV cleaning, loading, aggregation, anomaly rules, forecast
+  models/           SQLAlchemy models
+frontend/           pages/ (login, dashboard), js/ (app, chatbot, config), css/
+data/               synthetic CSVs
+scripts/            setup, data generation, create_admin, demo bootstrap, debug helpers
+tests/              unit/ and integration/ pytest suites
+docs/               setup, data, API, architecture, decisions, testing, images
+render.yaml         public demo deployment
 ```
 
-## Frontend Availability Check
+## Engineering decisions and trade-offs
 
-```bash
-python scripts/check_frontend.py
-```
+- **One FastAPI app with a router per area**, also serving the frontend:
+  simple to run and deploy, but everything scales together. ([ADR-001](docs/DECISIONS.md#adr-001-one-fastapi-app-with-a-router-per-domain))
+- **SQLite by default, MySQL by configuration:** zero-setup demo and tests;
+  only SQLite is tested. ([ADR-002](docs/DECISIONS.md#adr-002-sqlite-by-default-mysql-through-configuration))
+- **Threshold surge detection** instead of a statistical or learned model:
+  easy to explain and tune, but blind to normal variation. ([ADR-003](docs/DECISIONS.md#adr-003-threshold-based-surge-detection))
+- **Vanilla JS + Chart.js** instead of a SPA framework: no build step, but one
+  large `app.js`. ([ADR-004](docs/DECISIONS.md#adr-004-vanilla-javascript-and-chartjs-instead-of-a-spa-framework))
+- **Reject uploads with missing columns** instead of filling in invented
+  values. ([ADR-007](docs/DECISIONS.md#adr-007-reject-uploads-with-missing-columns-instead-of-filling-them-in))
 
-## Database Validation
+## Limitations and future work
 
-```bash
-python scripts/check_db_dates.py
-```
+- **Synthetic data only.** All numbers describe generated data
+  ([docs/DATA.md](docs/DATA.md)); region codes and district names in the CSVs
+  don't always match.
+- **Biometric data does not load with pandas 3** (pinning planned), so
+  biometric scores show 0% and quality anomalies never fire.
+- **Analytics are rules, not models:** surge detection only compares today
+  with the last 7 days; the forecast's confidence is a constant.
+- **Re-importing data for a date already in `daily_stats` does not update
+  that day's totals** (the aggregation skips existing dates).
+- **Unknown districts default to Mumbai and invalid ages to 36–60** inside an
+  accepted file.
+- The chatbot sends dashboard aggregates to a third-party API; without a key
+  it is disabled.
+- Planned: rate limiting on login and chat, pagination on list endpoints,
+  configurable CORS, CI, pinned dependencies.
 
-## API Validation
+## Credits, licence, contact
 
-```bash
-python scripts/check_api_data.py
-```
-
----
-
-# API Endpoints
-
-## Authentication
-
-```http
-POST /api/auth/login
-POST /api/auth/register
-POST /api/auth/logout
-```
-
-## Analytics
-
-```http
-GET /api/dashboard
-GET /api/analytics/live
-GET /api/analytics/history
-```
-
-## Health
-
-```http
-GET /health
-GET /docs
-```
-
----
-
-# Security Features
-
-* JWT Authentication
-* Password Hashing
-* Input Validation
-* SQL Injection Protection
-* API Rate Limiting
-* Secure Environment Variables
-
----
-
-# CI/CD Pipeline
-
-GitHub Actions automatically performs:
-
-* Code Quality Checks
-* Unit Testing
-* API Validation
-* Dependency Verification
-* Build Validation
-
-Workflow:
-
-```text
-Push → Test → Build → Deploy
-```
-
----
-
-# Future Enhancements
-
-## Phase 1
-
-* PostgreSQL Migration
-* Redis Caching
-* API Rate Limiting
-
-## Phase 2
-
-* AI-powered Analytics
-* Predictive Enrollment Forecasting
-* Advanced Reporting
-
-## Phase 3
-
-* Kubernetes Deployment
-* Cloud Storage Integration
-* Multi-Region Scalability
-
----
-
-# Performance Improvements
-
-* Database Indexing
-* Query Optimization
-* Response Caching
-* Background Job Processing
-
----
-
-# Monitoring
-
-* Application Health Checks
-* API Response Monitoring
-* Database Diagnostics
-* Error Tracking
-
----
-
-# Contributors
-
-Contributions are welcome.
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit changes
-4. Open a Pull Request
-
----
-
-# License
-
-This project is currently unlicensed.
-
-For public release, add an appropriate license such as:
-
-* MIT License
-* Apache 2.0 License
-* GPL v3
-
----
-
-# Author
-
-Developed as a modern Aadhaar Analytics and Monitoring Platform demonstrating:
-
-* Full Stack Development
-* FastAPI Backend Engineering
-* React Frontend Development
-* Database Design
-* API Development
-* Software Testing
-* DevOps Practices
+- Team: see [CONTRIBUTORS.md](CONTRIBUTORS.md).
+- Licence: [MIT](LICENSE).
+- Contact: `TODO(Shraddha): preferred contact link`.

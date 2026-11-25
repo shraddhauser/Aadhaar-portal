@@ -18,7 +18,7 @@ pytest --cov=backend --cov-report=term
 ```
 
 Last measured on 2026-11-25: **71% line coverage of `backend/`**, from
-80 collected tests (79 passed, 1 expected failure; see below). Re-run the
+81 collected tests (80 passed, 1 expected failure; see below). Re-run the
 command above to check the current figure.
 
 ## How the fixtures work
@@ -45,7 +45,7 @@ command above to check the current figure.
 | `integration/test_health.py` | `GET /health` returns 200 | Used by the deploy health check; it used to return 404 |
 | `integration/test_auth.py` | Login success; wrong password, unknown user, no token, expired, forged and tampered tokens, deleted user → 401 | Every other route depends on this check |
 | `integration/test_live_stats.py` | `/api/live/summary` equals the seeded latest day (overall and per region); gender split adds up to the total; default 30-day window; regions list; empty DB gives zeros, not 500 | The dashboard's headline numbers |
-| `integration/test_import.py` | Valid CSV adds N rows; missing column → 400 naming it; empty, header-only and non-CSV files → 400; oversize → 413; no token → 401; non-admin → 403 | Uploads are the only write path from the UI |
+| `integration/test_import.py` | Valid CSV adds N rows; missing column → 400 naming it; empty, header-only and non-CSV files → 400; oversize → 413; no token → 401; non-admin → 403; demo mode → 403 | Uploads are the only write path from the UI |
 | `integration/test_anomalies.py` | A 5× spike today in one region is flagged for that region only; flat data → no surges; threshold respected; empty list | Surge detection is a headline feature |
 | `integration/test_insights.py` | Forecast returns exactly `months_ahead` non-negative values; out-of-range horizon → 422; too little history → error message; `trends-forecast` values non-negative | Forecast output feeds charts directly |
 | `integration/test_export.py` | `/api/export/summary-report` JSON schema and 30-day totals; top regions sorted and ≤ 5; needs a token | The report the PDF export is built from |
