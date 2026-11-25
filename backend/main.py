@@ -41,6 +41,13 @@ app.include_router(data_export.router, prefix="/api/export",    tags=["Data Expo
 app.include_router(data_import.router, prefix="/api/import",    tags=["Data Import & Predictive Analytics"])
 app.include_router(chat.router,        prefix="/api/chat",      tags=["AI Chatbot"])
 
+@app.get("/health", tags=["Health"])
+def health():
+    # Registered before the static mount at "/", which would otherwise
+    # catch this path and return 404.
+    return {"status": "ok", "message": "Aadhaar Analytics Portal API is running."}
+
+
 # -----------------------------------------------------------------
 # Frontend routes
 # -----------------------------------------------------------------
@@ -62,9 +69,3 @@ if _frontend.is_dir():
     app.mount("/css", StaticFiles(directory=str(_frontend / "css")), name="css")
     app.mount("/js",  StaticFiles(directory=str(_frontend / "js")),  name="js")
     app.mount("/",    StaticFiles(directory=str(_frontend / "pages"), html=True), name="pages")
-
-
-@app.get("/health", tags=["Health"])
-def root():
-    return {"status": "ok", "message": "Aadhaar Analytics Portal API is running."}
-
