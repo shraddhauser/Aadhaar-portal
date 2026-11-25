@@ -3,34 +3,99 @@ backend/routes/data_import.py
 API endpoints for data ingestion and predictive analytics.
 """
 
-from fastapi import APIRouter, Depends, File, UploadFile, Query
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Query
 from sqlalchemy.orm import Session
 import io
+import os
 import pandas as pd
 import logging
 
 from backend.database import get_db
 from backend.data_ingestion import DataIngestionPipeline, PredictiveAnalytics
-from backend.routes.auth import get_current_admin
+from backend.routes.auth import require_admin
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+# Every /api/import/* route requires a SuperAdmin token.
+router = APIRouter(dependencies=[Depends(require_admin)])
+
+MAX_UPLOAD_BYTES = int(float(os.getenv("MAX_UPLOAD_MB", "10")) * 1024 * 1024)
+_CHUNK = 1024 * 1024
+
+# Each entry is a group of accepted column names; one of them must be present.
+REQUIRED_COLUMNS = {
+    "enrollment": [
+        ("enrollment_date",),
+        ("gender",),
+        ("age", "age_group"),
+        ("region_code", "district"),
+    ],
+    "demographic": [
+        ("update_date",),
+        ("update_type",),
+        ("region_code", "district"),
+    ],
+    "biometric": [
+        ("enrollment_date",),
+        ("fingerprint_quality", "fp_quality"),
+        ("iris_quality", "iris_qual"),
+        ("photo_quality", "photo_qual"),
+    ],
+}
+
+
+async def read_csv_upload(file: UploadFile, kind: str) -> pd.DataFrame:
+    """Read an uploaded CSV with size, type and column checks.
+
+    Raises 413 if the file is over MAX_UPLOAD_MB, and 400 if it is empty,
+    not a parseable CSV, or missing required columns (listed in the error).
+    """
+    if not (file.filename or "").lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="File must be a .csv file.")
+
+    contents = bytearray()
+    while chunk := await file.read(_CHUNK):
+        contents.extend(chunk)
+        if len(contents) > MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File is larger than the {MAX_UPLOAD_BYTES / (1024 * 1024):g} MB limit.",
+            )
+    if not contents.strip():
+        raise HTTPException(status_code=400, detail="File is empty.")
+
+    try:
+        df = pd.read_csv(io.BytesIO(bytes(contents)))
+    except (pd.errors.EmptyDataError, pd.errors.ParserError, UnicodeDecodeError) as e:
+        raise HTTPException(status_code=400, detail=f"Could not parse CSV: {e}")
+
+    columns = {str(c).lower().strip() for c in df.columns}
+    missing = [
+        " or ".join(group)
+        for group in REQUIRED_COLUMNS[kind]
+        if not columns.intersection(group)
+    ]
+    if missing:
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "Missing required columns.", "missing_columns": missing},
+        )
+    if df.empty:
+        raise HTTPException(status_code=400, detail="File has a header row but no data rows.")
+    return df
 
 
 @router.post("/enrollments/upload")
 async def upload_enrollment_data(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    _: object = Depends(get_current_admin),
 ):
     """
     Upload and ingest enrollment CSV data.
-    Expected columns: enrollment_date, gender, age, enrollment_status, region_code
+    Required columns: enrollment_date, gender, age (or age_group),
+    region_code (or district). Optional: enrollment_status, aadhaar_generated.
     """
+    df = await read_csv_upload(file, "enrollment")
     try:
-        contents = await file.read()
-        df = pd.read_csv(io.BytesIO(contents))
-        
         pipeline = DataIngestionPipeline(db)
         count, errors = pipeline.ingest_enrollment_data(df)
         
@@ -59,16 +124,14 @@ async def upload_enrollment_data(
 async def upload_demographic_data(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    _: object = Depends(get_current_admin),
 ):
     """
     Upload and ingest demographic/update CSV data.
-    Expected columns: update_date, update_type, update_status, region_code
+    Required columns: update_date, update_type, region_code (or district).
+    Optional: update_status.
     """
+    df = await read_csv_upload(file, "demographic")
     try:
-        contents = await file.read()
-        df = pd.read_csv(io.BytesIO(contents))
-        
         pipeline = DataIngestionPipeline(db)
         count, errors = pipeline.ingest_demographic_data(df)
         
@@ -93,16 +156,14 @@ async def upload_demographic_data(
 async def upload_biometric_data(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    _: object = Depends(get_current_admin),
 ):
     """
     Upload and ingest biometric quality CSV data.
-    Expected columns: fingerprint_quality, iris_quality, photo_quality, enrollment_date
+    Required columns: enrollment_date, fingerprint_quality, iris_quality,
+    photo_quality.
     """
+    df = await read_csv_upload(file, "biometric")
     try:
-        contents = await file.read()
-        df = pd.read_csv(io.BytesIO(contents))
-        
         pipeline = DataIngestionPipeline(db)
         count, errors = pipeline.ingest_biometric_data(df)
         
@@ -124,7 +185,6 @@ async def upload_biometric_data(
 def forecast_enrollment(
     months_ahead: int = Query(3, ge=1, le=12),
     db: Session = Depends(get_db),
-    _: object = Depends(get_current_admin),
 ):
     """
     Forecast enrollment trends for next N months using exponential smoothing.
@@ -136,7 +196,6 @@ def forecast_enrollment(
 @router.get("/predictive/growth-patterns")
 def identify_growth_patterns(
     db: Session = Depends(get_db),
-    _: object = Depends(get_current_admin),
 ):
     """
     Identify regions with highest growth and potential issues.
@@ -148,7 +207,6 @@ def identify_growth_patterns(
 @router.get("/status")
 def ingestion_status(
     db: Session = Depends(get_db),
-    _: object = Depends(get_current_admin),
 ):
     """
     Get current data ingestion status and counts.
