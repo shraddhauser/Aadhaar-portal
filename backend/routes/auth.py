@@ -1,10 +1,12 @@
 """
 backend/routes/auth.py
 Admin authentication endpoints — login, token verification.
-SECRET_KEY must be set via environment variable in production.
+JWT_SECRET_KEY must be set via environment variable in production.
 """
 
+import logging
 import os
+import secrets
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -17,11 +19,35 @@ from backend.database import get_db
 from backend.models.models import AdminUser
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
 
 # -----------------------------------------------------------------
-# Security config — override SECRET_KEY via env var in production
+# Security config
 # -----------------------------------------------------------------
-SECRET_KEY      = os.getenv("JWT_SECRET_KEY", "CHANGE_THIS_SECRET_IN_PRODUCTION")
+def _load_secret_key() -> str:
+    """Return the JWT signing key from JWT_SECRET_KEY.
+
+    In production (ENV=production) a missing key is a startup error. In any
+    other environment a random key is generated for this process, so tokens
+    stop working whenever the server restarts.
+    """
+    key = os.getenv("JWT_SECRET_KEY", "").strip()
+    if key:
+        return key
+    if os.getenv("ENV", "development").strip().lower() == "production":
+        raise RuntimeError(
+            "JWT_SECRET_KEY must be set when ENV=production. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+        )
+    logger.warning(
+        "JWT_SECRET_KEY is not set; using a random key for this process. "
+        "Logins will not survive a restart. Set JWT_SECRET_KEY in .env."
+    )
+    return secrets.token_urlsafe(64)
+
+
+SECRET_KEY      = _load_secret_key()
 ALGORITHM       = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480   # 8-hour session
 
@@ -102,6 +128,16 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         "role": admin.role,
         "full_name": admin.full_name or admin.username,
     }
+
+
+def require_admin(current_admin: AdminUser = Depends(get_current_admin)) -> AdminUser:
+    """Dependency: allow only users with the SuperAdmin role."""
+    if current_admin.role != "SuperAdmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin role required",
+        )
+    return current_admin
 
 
 @router.get("/me")
