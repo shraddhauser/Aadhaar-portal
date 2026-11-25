@@ -14,11 +14,15 @@ from backend.routes.auth import get_current_admin
 
 router = APIRouter()
 
+MAX_PAGE_SIZE = 500
+
 
 @router.get("/list")
 def list_anomalies(
     resolved: bool | None = Query(None, description="Filter by resolved status"),
     severity: str | None  = Query(None, description="Low | Medium | High | Critical"),
+    limit: int = Query(200, ge=1, le=MAX_PAGE_SIZE, description="Max rows to return (1-500)"),
+    offset: int = Query(0, ge=0, description="Rows to skip"),
     db: Session = Depends(get_db),
     _: object = Depends(get_current_admin),
 ):
@@ -28,7 +32,8 @@ def list_anomalies(
         q = q.filter(Anomaly.resolved == resolved)
     if severity:
         q = q.filter(Anomaly.severity == severity)
-    rows = q.order_by(Anomaly.detected_on.desc()).limit(200).all()
+    rows = q.order_by(Anomaly.detected_on.desc(), Anomaly.anomaly_id.desc()
+                      ).offset(offset).limit(limit).all()
     return [
         {
             "anomaly_id":   r.anomaly_id,

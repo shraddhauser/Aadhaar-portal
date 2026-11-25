@@ -14,6 +14,8 @@ from backend.routes.auth import get_current_admin
 
 router = APIRouter()
 
+MAX_PAGE_SIZE = 500
+
 
 @router.get("/monthly-trend")
 def monthly_trend(
@@ -54,6 +56,8 @@ def monthly_trend(
 def regional_comparison(
     start_date: date = Query(default=date(2024, 1, 1)),
     end_date: date   = Query(default=date(2024, 12, 31)),
+    limit: int = Query(MAX_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE, description="Max rows to return (1-500)"),
+    offset: int = Query(0, ge=0, description="Rows to skip"),
     db: Session = Depends(get_db),
     _: object = Depends(get_current_admin),
 ):
@@ -70,8 +74,8 @@ def regional_comparison(
     ).join(DailyStat, DailyStat.region_id == Region.region_id
     ).filter(DailyStat.stat_date.between(start_date, end_date)
     ).group_by(Region.region_id
-    ).order_by(func.sum(DailyStat.total_enrollments).desc()
-    ).all()
+    ).order_by(func.sum(DailyStat.total_enrollments).desc(), Region.region_code
+    ).offset(offset).limit(limit).all()
 
     return [
         {
@@ -111,6 +115,8 @@ def yearly_growth(
 def update_history(
     start_date: date = Query(default=date(2024, 1, 1)),
     end_date: date   = Query(default=date(2024, 12, 31)),
+    limit: int = Query(MAX_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE, description="Max rows to return (1-500)"),
+    offset: int = Query(0, ge=0, description="Rows to skip"),
     db: Session = Depends(get_db),
     _: object = Depends(get_current_admin),
 ):
@@ -120,7 +126,9 @@ def update_history(
         Update.update_status,
         func.count(Update.update_id).label("count"),
     ).filter(Update.update_date.between(start_date, end_date)
-    ).group_by(Update.update_type, Update.update_status).all()
+    ).group_by(Update.update_type, Update.update_status
+    ).order_by(Update.update_type, Update.update_status
+    ).offset(offset).limit(limit).all()
 
     return [
         {"type": r.update_type, "status": r.update_status, "count": r.count}
