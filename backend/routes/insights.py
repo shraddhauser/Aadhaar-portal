@@ -125,7 +125,8 @@ def trends_forecast(
     """
     Simple predictive trend: compute 3-month simple moving average
     and project next month's enrollment count using growth rate.
-    Also integrates machine learning-based forecasts when available.
+    Also includes the damped exponential-smoothing forecast from
+    PredictiveAnalytics. Both are simple statistical rules, not trained models.
     """
     from sqlalchemy import extract
 
@@ -183,7 +184,7 @@ def trends_forecast(
         "growth_rate_pct": round(growth_rate * 100, 1),
         "projected_next":  projected,
         "ml_forecast":     ml_forecast,
-        "model": "Exponential Smoothing + Linear Regression (if ML data available)"
+        "model": "3-month moving average + damped exponential smoothing (rule-based, no trained model)"
     }
 
 

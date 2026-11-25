@@ -559,7 +559,7 @@ class PredictiveAnalytics:
             return {
                 "historical": enrollments[-6:],  # Last 6 months
                 "forecast": forecast,
-                "confidence": 0.75
+                "confidence": 0.75  # fixed placeholder, not computed from the data
             }
         except Exception as e:
             logger.error(f"Error in forecast: {str(e)}")
