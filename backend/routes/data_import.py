@@ -114,13 +114,9 @@ async def upload_enrollment_data(
             "anomalies_detected": anomaly_count,
             "errors": errors[:10]  # Return first 10 errors
         }
-    except Exception as e:
-        logger.error(f"Error uploading enrollment data: {str(e)}")
-        return {
-            "status": "error",
-            "message": str(e),
-            "records_ingested": 0
-        }
+    except Exception:
+        logger.exception("Error uploading enrollment data")
+        raise  # becomes a JSON 500 via the app's exception handler
 
 
 @router.post("/demographic/upload")
@@ -146,13 +142,9 @@ async def upload_demographic_data(
             "records_ingested": count,
             "errors": errors[:10]
         }
-    except Exception as e:
-        logger.error(f"Error uploading demographic data: {str(e)}")
-        return {
-            "status": "error",
-            "message": str(e),
-            "records_ingested": 0
-        }
+    except Exception:
+        logger.exception("Error uploading demographic data")
+        raise  # becomes a JSON 500 via the app's exception handler
 
 
 @router.post("/biometric/upload")
@@ -175,13 +167,9 @@ async def upload_biometric_data(
             "records_ingested": count,
             "errors": errors[:10]
         }
-    except Exception as e:
-        logger.error(f"Error uploading biometric data: {str(e)}")
-        return {
-            "status": "error",
-            "message": str(e),
-            "records_ingested": 0
-        }
+    except Exception:
+        logger.exception("Error uploading biometric data")
+        raise  # becomes a JSON 500 via the app's exception handler
 
 
 @router.get("/predictive/forecast-enrollment")
@@ -230,6 +218,6 @@ def ingestion_status(
             "daily_stats": int(daily_stat_count),
             "total_records": int(enrollment_count + update_count + biometric_count)
         }
-    except Exception as e:
-        logger.error(f"Error getting status: {str(e)}")
-        return {"error": str(e)}
+    except Exception:
+        logger.exception("Error getting status")
+        raise
