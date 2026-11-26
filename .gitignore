@@ -1,0 +1,47 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# VS Code settings
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python egg files
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Backup files
+*.bak
+*.swp
+*.tmp
+
+# Ignore zip archives (optional)
+*.zip
+
+# Node modules (if any frontend uses npm)
+node_modules/
+
+# Local databases (rebuild with: python scripts/setup_complete.py)
+*.db
+*.sqlite3
+
+# Secrets: never commit .env (copy .env.template instead)
+.env
+
+
+# Test and coverage output
+.coverage
+htmlcov/
+.pytest_cache/

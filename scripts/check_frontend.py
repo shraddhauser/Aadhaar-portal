@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-import urllib.request, urllib.error
+import urllib.request
+import urllib.error
 
-url = 'http://127.0.0.1:3000/pages/login.html'
+url = 'http://127.0.0.1:8000/'
 try:
     resp = urllib.request.urlopen(url, timeout=5)
     print('OK', resp.getcode())

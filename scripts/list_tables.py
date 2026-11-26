@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sqlite3
 from pathlib import Path
-p = Path(__file__).parent / 'aadhaar_analytics.db'
+p = Path(__file__).parent.parent / 'aadhaar_analytics.db'
 print('DB path:', p)
 conn = sqlite3.connect(p)
 c = conn.cursor()

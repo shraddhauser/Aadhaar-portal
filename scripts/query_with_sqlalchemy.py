@@ -1,6 +1,6 @@
 from pathlib import Path
 import sys
-proj = Path(__file__).resolve().parent.parent / 'aadhaar-portal'
+proj = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(proj))
 from backend.database import SessionLocal
 from backend.models.models import Enrollment, DailyStat
