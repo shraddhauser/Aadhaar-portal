@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/shraddhauser/Aadhaar-portal/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/shraddhauser/Aadhaar-portal/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/shraddhauser/aadhaar-analytics-portal/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/shraddhauser/aadhaar-analytics-portal/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Python 3.11" src="https://img.shields.io/badge/python-3.11-blue">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green">
 </p>
@@ -133,8 +133,8 @@ Requires Python 3.11.
 Linux / macOS:
 
 ```bash
-git clone https://github.com/shraddhauser/Aadhaar-portal.git
-cd Aadhaar-portal
+git clone https://github.com/shraddhauser/aadhaar-analytics-portal.git
+cd aadhaar-analytics-portal
 python3.11 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 cp .env.template .env
@@ -145,8 +145,8 @@ python -m uvicorn backend.main:app --port 8000
 Windows (PowerShell):
 
 ```powershell
-git clone https://github.com/shraddhauser/Aadhaar-portal.git
-cd Aadhaar-portal
+git clone https://github.com/shraddhauser/aadhaar-analytics-portal.git
+cd aadhaar-analytics-portal
 py -3.11 -m venv venv; venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .env.template .env
